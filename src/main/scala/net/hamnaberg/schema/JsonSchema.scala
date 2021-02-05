@@ -1,6 +1,7 @@
 package net.hamnaberg.schema
 
-import sttp.tapir.apispec.{Reference, Schema, SchemaType}
+import io.circe.{Encoder, Printer}
+import sttp.tapir.apispec.{ExampleSingleValue, Reference, Schema, SchemaType}
 
 import scala.collection.immutable.ListMap
 
@@ -9,14 +10,16 @@ case class JsonSchema[A] private (
     fields: List[JsonSchema.FieldRef] = Nil,
     reference: Option[Reference] = None) {
   def withReference(ref: Reference): JsonSchema[A] = copy(reference = Some(ref))
+
+  def withExample(example: A, printer: Printer = Printer.spaces2)(implicit
+      e: Encoder[A]): JsonSchema[A] =
+    copy(asTapir = asTapir.copy(example = Some(ExampleSingleValue(e(example).printWith(printer)))))
 }
 
 object JsonSchema {
   case class FieldRef(name: String, field: Field[_])
 
   def apply[A](implicit ev: JsonSchema[A]): JsonSchema[A] = ev
-
-  def nonNullable(typ: SchemaType.SchemaType) = Schema(`type` = Some(typ), nullable = Some(false))
 
   def forProduct1[O, A1](n1: String)(implicit S1: Field[A1]): JsonSchema[O] =
     fromFields(List(FieldRef(n1, S1)))
@@ -25,6 +28,12 @@ object JsonSchema {
       S1: Field[A1],
       S2: Field[A2]): JsonSchema[O] =
     fromFields(List(FieldRef(n1, S1), FieldRef(n2, S2)))
+
+  def forProduct3[O, A1, A2, A3](n1: String, n2: String, n3: String)(implicit
+      S1: Field[A1],
+      S2: Field[A2],
+      S3: Field[A3]): JsonSchema[O] =
+    fromFields(List(FieldRef(n1, S1), FieldRef(n2, S2), FieldRef(n3, S3)))
 
   def fromFields[O](fields: List[FieldRef]): JsonSchema[O] = {
     val props =
@@ -44,14 +53,20 @@ object JsonSchema {
 
   implicit val doubleSchema: JsonSchema[Double] = embedded(SchemaType.Number)
 
+  implicit val floatSchema: JsonSchema[Float] = embedded(SchemaType.Number)
+
+  implicit val bigDecimalSchema: JsonSchema[BigDecimal] = embedded(SchemaType.Number)
+
+  implicit val bigIntSchema: JsonSchema[BigInt] = embedded(SchemaType.Number)
+
   implicit val longSchema: JsonSchema[Long] = embedded(SchemaType.Integer)
 
   implicit val booleanSchema: JsonSchema[Boolean] = embedded(SchemaType.Boolean)
 
   implicit val stringSchema: JsonSchema[String] = embedded(SchemaType.String)
 
-  private[schema] def referenceOrSchema[A](implicit ev: Field[A]) =
-    ev.reference.toLeft(ev.asTapir)
+  private def nonNullable(typ: SchemaType.SchemaType) =
+    Schema(`type` = Some(typ), nullable = Some(false))
 
   private def embedded[A](typ: SchemaType.SchemaType): JsonSchema[A] = JsonSchema(
     Schema(`type` = Some(typ), nullable = Some(false))

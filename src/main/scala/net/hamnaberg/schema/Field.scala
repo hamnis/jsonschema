@@ -7,12 +7,7 @@ case class Field[A] private[schema] (
     asTapir: Schema,
     reference: Option[Reference] = None,
     nullable: NullabilityKnown = NotNull
-) {
-  //def map[B](f: A => B): Field[B]
-  /*def contramap[B](f: A => B): Field[B] = {
-
-  }*/
-}
+)
 
 object Field {
   def apply[A](ev: Field[A]): Field[A] = ev
