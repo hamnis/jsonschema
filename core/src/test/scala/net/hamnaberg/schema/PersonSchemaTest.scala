@@ -1,6 +1,7 @@
 package net.hamnaberg.schema
 
 import cats.syntax.all._
+import io.circe.{Decoder, Encoder}
 import munit.FunSuite
 import sttp.tapir.apispec.{ReferenceOr, Schema, SchemaType}
 
@@ -20,7 +21,15 @@ class PersonSchemaTest extends FunSuite {
       required = List("name", "age")
     )
 
-    val schema: JsonSchema[Person] = JsonSchema.forProduct2[Person, String, Int]("name", "age")
-    assertEquals(schema.asTapir, expected)
+    val schema: JsonSchema[Person] = JsonSchema.forProduct2[Person, String, Int]("name", "age")(
+      Person.apply)(Person.unapply(_).get)
+
+    val encoder: Encoder[Person] = schema.encoder
+    val decoder: Decoder[Person] = schema.decoder
+
+    val original = Person("erlend", 40)
+    val Right(decodedPerson) = decoder.decodeJson(encoder.apply(original))
+    assertEquals(schema.schema, expected)
+    assertEquals(decodedPerson, original)
   }
 }
