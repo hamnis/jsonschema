@@ -3,6 +3,8 @@ package net.hamnaberg.schema
 import io.circe.{Codec, Decoder, Encoder, Printer}
 import sttp.tapir.apispec.{ExampleSingleValue, Reference, Schema, SchemaType}
 
+import java.time.{Instant, LocalDate, LocalDateTime, OffsetDateTime, ZonedDateTime}
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.collection.immutable.ListMap
 
@@ -64,6 +66,41 @@ object JsonSchema {
 
     JsonSchema[O](schema = schema, codec = codec, fields = fields)
   }
+
+  def enumeration(list: List[String]) = {
+    val s = nonNull[String](SchemaType.String)
+    s.copy(schema = s.schema.copy(`enum` = Some(list)))
+  }
+
+  implicit val localDateTimeSchema: JsonSchema[LocalDateTime] = localDateTimeWithFormatter()
+  implicit val localDateSchema: JsonSchema[LocalDate] = localDateWithFormatter()
+  implicit val zonedDateTimeSchema: JsonSchema[ZonedDateTime] = zonedDateTimeWithFormatter()
+  implicit val offsetDateTimeSchema: JsonSchema[OffsetDateTime] = offsetDateTimeWithFormatter()
+
+  def localDateTimeWithFormatter(
+      format: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME) =
+    nonNull[LocalDateTime](SchemaType.String)(
+      Encoder.encodeLocalDateTimeWithFormatter(format),
+      Decoder.decodeLocalDateTimeWithFormatter(format))
+
+  def localDateWithFormatter(format: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE) =
+    nonNull[LocalDate](SchemaType.String)(
+      Encoder.encodeLocalDateWithFormatter(format),
+      Decoder.decodeLocalDateWithFormatter(format))
+
+  def zonedDateTimeWithFormatter(
+      format: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME) =
+    nonNull[ZonedDateTime](SchemaType.String)(
+      Encoder.encodeZonedDateTimeWithFormatter(format),
+      Decoder.decodeZonedDateTimeWithFormatter(format))
+
+  def offsetDateTimeWithFormatter(
+      format: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME) =
+    nonNull[OffsetDateTime](SchemaType.String)(
+      Encoder.encodeOffsetDateTimeWithFormatter(format),
+      Decoder.decodeOffsetDateTimeWithFormatter(format))
+
+  implicit val instant: JsonSchema[Instant] = nonNull[Instant](SchemaType.String)
 
   implicit val intSchema: JsonSchema[Int] = nonNull(SchemaType.Integer)
 
