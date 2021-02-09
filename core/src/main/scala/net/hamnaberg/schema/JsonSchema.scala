@@ -79,49 +79,51 @@ object JsonSchema {
 
   def localDateTimeWithFormatter(
       format: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME) =
-    nonNull[LocalDateTime](SchemaType.String)(
+    nonNull[LocalDateTime](SchemaType.String, Some("date-time"))(
       Encoder.encodeLocalDateTimeWithFormatter(format),
       Decoder.decodeLocalDateTimeWithFormatter(format))
 
   def localDateWithFormatter(format: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE) =
-    nonNull[LocalDate](SchemaType.String)(
+    nonNull[LocalDate](SchemaType.String, Some("date"))(
       Encoder.encodeLocalDateWithFormatter(format),
       Decoder.decodeLocalDateWithFormatter(format))
 
   def zonedDateTimeWithFormatter(
       format: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME) =
-    nonNull[ZonedDateTime](SchemaType.String)(
+    nonNull[ZonedDateTime](SchemaType.String, Some("date-time"))(
       Encoder.encodeZonedDateTimeWithFormatter(format),
       Decoder.decodeZonedDateTimeWithFormatter(format))
 
   def offsetDateTimeWithFormatter(
       format: DateTimeFormatter = DateTimeFormatter.ISO_ZONED_DATE_TIME) =
-    nonNull[OffsetDateTime](SchemaType.String)(
+    nonNull[OffsetDateTime](SchemaType.String, Some("date-time"))(
       Encoder.encodeOffsetDateTimeWithFormatter(format),
       Decoder.decodeOffsetDateTimeWithFormatter(format))
 
-  implicit val instant: JsonSchema[Instant] = nonNull[Instant](SchemaType.String)
+  implicit val instant: JsonSchema[Instant] = nonNull[Instant](SchemaType.String, Some("date-time"))
 
-  implicit val intSchema: JsonSchema[Int] = nonNull(SchemaType.Integer)
+  implicit val intSchema: JsonSchema[Int] = nonNull(SchemaType.Integer, Some("int32"))
 
-  implicit val doubleSchema: JsonSchema[Double] = nonNull(SchemaType.Number)
+  implicit val doubleSchema: JsonSchema[Double] = nonNull(SchemaType.Number, Some("double"))
 
-  implicit val floatSchema: JsonSchema[Float] = nonNull(SchemaType.Number)
+  implicit val floatSchema: JsonSchema[Float] = nonNull(SchemaType.Number, Some("float"))
 
   implicit val bigDecimalSchema: JsonSchema[BigDecimal] = nonNull(SchemaType.Number)
 
   implicit val bigIntSchema: JsonSchema[BigInt] = nonNull(SchemaType.Number)
 
-  implicit val longSchema: JsonSchema[Long] = nonNull(SchemaType.Integer)
+  implicit val longSchema: JsonSchema[Long] = nonNull(SchemaType.Integer, Some("int64"))
 
   implicit val booleanSchema: JsonSchema[Boolean] = nonNull(SchemaType.Boolean)
 
   implicit val stringSchema: JsonSchema[String] = nonNull(SchemaType.String)
 
-  implicit val uuidSchema: JsonSchema[UUID] = nonNull(SchemaType.String)
+  implicit val uuidSchema: JsonSchema[UUID] = nonNull(SchemaType.String, Some("uuid"))
 
-  def nonNull[A: Encoder: Decoder](typ: SchemaType.SchemaType): JsonSchema[A] = JsonSchema(
-    Schema(`type` = Some(typ), nullable = Some(false)),
+  def nonNull[A: Encoder: Decoder](
+      typ: SchemaType.SchemaType,
+      format: Option[String] = None): JsonSchema[A] = JsonSchema(
+    Schema(`type` = Some(typ), nullable = Some(false), format = format),
     Codec.from(Decoder[A], Encoder[A])
   )
 
