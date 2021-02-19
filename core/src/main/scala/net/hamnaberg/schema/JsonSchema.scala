@@ -1,6 +1,6 @@
 package net.hamnaberg.schema
 
-import io.circe.{Codec, Decoder, Encoder, Printer}
+import io.circe.{Codec, Decoder, Encoder, Json, Printer}
 import sttp.tapir.apispec.{ExampleSingleValue, Reference, Schema, SchemaType}
 
 import java.time.{Instant, LocalDate, LocalDateTime, OffsetDateTime, ZonedDateTime}
@@ -22,6 +22,9 @@ case class JsonSchema[A] private (
 
   def encoder: Encoder[A] = codec
   def decoder: Decoder[A] = codec
+
+  def encode(a: A): Json = codec.apply(a)
+  def decode(json: Json): Decoder.Result[A] = codec.decodeJson(json)
 }
 
 object JsonSchema {
