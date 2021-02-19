@@ -15,7 +15,7 @@ class PersonSchemaTest extends FunSuite {
       `type` = Some(SchemaType.Object),
       properties = ListMap[String, ReferenceOr[Schema]](
         "name" -> Schema(`type` = Some(SchemaType.String), nullable = Some(false)).asRight,
-        "age" -> Schema(`type` = Some(SchemaType.Integer), nullable = Some(false)).asRight
+        "age" -> Schema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = Some("int32")).asRight
       ),
       nullable = Some(false),
       required = List("name", "age")
