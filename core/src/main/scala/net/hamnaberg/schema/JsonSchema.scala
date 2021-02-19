@@ -11,7 +11,6 @@ import scala.collection.immutable.ListMap
 case class JsonSchema[A] private (
     schema: Schema,
     codec: Codec[A],
-    fields: List[JsonSchema.FieldRef] = Nil,
     reference: Option[Reference] = None
 ) {
   def withReference(ref: Reference): JsonSchema[A] = copy(reference = Some(ref))
@@ -52,7 +51,7 @@ object JsonSchema {
       List(FieldRef(n1, S1), FieldRef(n2, S2), FieldRef(n3, S3)),
       Codec.forProduct3(n1, n2, n3)(decode)(encode))
 
-  private[schema] def fromFields[O](fields: List[FieldRef], codec: Codec[O]): JsonSchema[O] = {
+  private def fromFields[O](fields: List[FieldRef], codec: Codec[O]): JsonSchema[O] = {
     val props =
       ListMap.from(fields.map(f => f.name -> f.field.reference.toLeft(f.field.schema)))
 
@@ -67,7 +66,7 @@ object JsonSchema {
         properties = props,
         required = required)
 
-    JsonSchema[O](schema = schema, codec = codec, fields = fields)
+    JsonSchema[O](schema = schema, codec = codec)
   }
 
   def enumeration(list: List[String]) = {
