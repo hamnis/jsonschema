@@ -3,7 +3,7 @@ package net.hamnaberg.schema
 import cats.syntax.all._
 import io.circe.{Decoder, Encoder}
 import munit.FunSuite
-import sttp.tapir.apispec.{ReferenceOr, Schema, SchemaType}
+import sttp.tapir.apispec.{ReferenceOr, Schema => TapirSchema, SchemaType}
 
 import scala.collection.immutable.ListMap
 
@@ -11,11 +11,11 @@ class PersonSchemaTest extends FunSuite {
   case class Person(name: String, age: Int)
 
   test("person can generate Schema") {
-    val expected: Schema = Schema(
+    val expected: TapirSchema = TapirSchema(
       `type` = Some(SchemaType.Object),
-      properties = ListMap[String, ReferenceOr[Schema]](
-        "name" -> Schema(`type` = Some(SchemaType.String), nullable = Some(false)).asRight,
-        "age" -> Schema(
+      properties = ListMap[String, ReferenceOr[TapirSchema]](
+        "name" -> TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false)).asRight,
+        "age" -> TapirSchema(
           `type` = Some(SchemaType.Integer),
           nullable = Some(false),
           format = Some("int32")).asRight
@@ -24,10 +24,7 @@ class PersonSchemaTest extends FunSuite {
       required = List("name", "age")
     )
 
-    /* val schema: JsonSchema[Person] =
-      JsonSchema.forProduct2("name", "age")(Person.apply)(Person.unapply(_).get)*/
-
-    val schema2 = Schema2.record[Person] { field =>
+    val schema2 = Schema.record[Person] { field =>
       (
         field[String]("name", _.name),
         field[Int]("age", _.age)

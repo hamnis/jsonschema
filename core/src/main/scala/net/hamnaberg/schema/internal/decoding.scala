@@ -9,16 +9,12 @@ import io.circe.{Decoder, HCursor}
 object decoding {
   import structure._
 
-  def fromSchema[A](schema2: Schema2[A]): Decoder[A] =
+  def fromSchema[A](schema2: Schema[A]): Decoder[A] =
     schema2 match {
-      case SInt =>
-        Decoder.decodeInt
-      case SDouble =>
-        Decoder.decodeDouble
-      case SFloat =>
-        Decoder.decodeFloat
-      case SLong =>
-        Decoder.decodeLong
+      case SInt(_) =>
+        Decoder.decodeJsonNumber
+      case SNum(_) =>
+        Decoder.decodeJsonNumber
       case SBool =>
         Decoder.decodeBoolean
       case Str =>
@@ -33,7 +29,7 @@ object decoding {
         }
     }
 
-  def decodeList[A](element: Schema2[A]): Decoder[List[A]] =
+  def decodeList[A](element: Schema[A]): Decoder[List[A]] =
     Decoder.decodeList(fromSchema[A](element))
 
   def decodeRecord[R](fields: FreeApplicative[Field[R, *], R]) = Decoder.instance {
@@ -45,7 +41,7 @@ object decoding {
           case Field.Optional(name, elemSchema, _) =>
             Kleisli { c =>
               c.get[Option[A]](name)(
-                Decoder.decodeOption(fromSchema[A](elemSchema.asInstanceOf[Schema2[A]])))
+                Decoder.decodeOption(fromSchema[A](elemSchema.asInstanceOf[Schema[A]])))
             }
           case Field.Required(name, elemSchema, _) =>
             Kleisli { c =>

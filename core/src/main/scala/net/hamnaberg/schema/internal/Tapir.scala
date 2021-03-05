@@ -4,29 +4,25 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.tapir.apispec.{Reference, Schema, SchemaType}
+import sttp.tapir.apispec.{Reference, Schema => TapirSchema, SchemaType}
 
 import scala.collection.immutable.ListMap
 
 object Tapir {
   import structure._
 
-  def schemaFor[A](schema2: Schema2[A]): Schema =
+  def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
-      case structure.SInt =>
-        Schema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = Some("int32"))
-      case structure.SDouble =>
-        Schema(`type` = Some(SchemaType.Number), nullable = Some(false), format = Some("double"))
-      case structure.SFloat =>
-        Schema(`type` = Some(SchemaType.Number), nullable = Some(false), format = Some("float"))
-      case structure.SLong =>
-        Schema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = Some("int64"))
-      case structure.SBool =>
-        Schema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
-      case structure.Str =>
-        Schema(`type` = Some(SchemaType.String), nullable = Some(false))
+      case SInt(format) =>
+        TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
+      case SNum(format) =>
+        TapirSchema(`type` = Some(SchemaType.Number), nullable = Some(false), format = format)
+      case SBool =>
+        TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
+      case Str =>
+        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false))
       case Sequence(value, min, max) =>
-        Schema(
+        TapirSchema(
           `type` = Some(SchemaType.Array),
           nullable = Some(false),
           items = Some(Right(schemaFor(value))),
@@ -37,13 +33,13 @@ object Tapir {
       case Isos(xmap) => schemaFor(xmap.schema)
     }
 
-  def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): Schema = {
+  def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): TapirSchema = {
     import cats.data.Const
 
     val value =
       fields
-        .foldMap(new (Field[R, *] ~> Const[List[(String, Schema)], *]) {
-          override def apply[A](field: Field[R, A]): Const[List[(String, Schema)], A] =
+        .foldMap(new (Field[R, *] ~> Const[List[(String, TapirSchema)], *]) {
+          override def apply[A](field: Field[R, A]): Const[List[(String, TapirSchema)], A] =
             field match {
               case Field.Optional(name, elemSchema, _) =>
                 Const(List(name -> schemaFor(elemSchema).copy(nullable = Some(true))))
@@ -57,7 +53,7 @@ object Tapir {
       case (n, compiled) if compiled.nullable.forall(!_) => n
     }
 
-    Schema(
+    TapirSchema(
       `type` = Some(SchemaType.Object),
       properties = ListMap.from(value.map { case (name, schema) =>
         (name, schema.asRight[Reference])

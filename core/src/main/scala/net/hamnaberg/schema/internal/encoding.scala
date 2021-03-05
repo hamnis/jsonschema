@@ -10,15 +10,11 @@ import io.circe.syntax._
 object encoding {
   import structure._
 
-  def fromSchema[A](schema: Schema2[A]): Encoder[A] = schema match {
-    case SInt =>
-      Encoder.encodeInt
-    case SDouble =>
-      Encoder.encodeDouble
-    case SFloat =>
-      Encoder.encodeFloat
-    case SLong =>
-      Encoder.encodeLong
+  def fromSchema[A](schema: Schema[A]): Encoder[A] = schema match {
+    case SInt(_) =>
+      Encoder.encodeJsonNumber
+    case SNum(_) =>
+      Encoder.encodeJsonNumber
     case SBool =>
       Encoder.encodeBoolean
     case Str =>
@@ -31,7 +27,7 @@ object encoding {
       fromSchema(xmap.schema).contramap(xmap.w)
   }
 
-  def encodeList[A](schema: Schema2[A]): Encoder[List[A]] =
+  def encodeList[A](schema: Schema[A]): Encoder[List[A]] =
     Encoder.encodeList[A](fromSchema[A](schema))
 
   def encodeObject[R](record: FreeApplicative[Field[R, *], R]) = {
@@ -40,7 +36,7 @@ object encoding {
     record
       .analyze {
         new (Field[R, *] ~> Target) {
-          def write[E](name: String, schema: Schema2[E], elem: E) =
+          def write[E](name: String, schema: Schema[E], elem: E) =
             Vector(name -> fromSchema(schema).apply(elem))
 
           override def apply[A](fa: Field[R, A]): Target[A] =
