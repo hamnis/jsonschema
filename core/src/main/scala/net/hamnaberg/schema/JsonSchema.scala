@@ -1,4 +1,4 @@
-package net.hamnaberg.schema
+/*package net.hamnaberg.schema
 
 import cats.data.NonEmptyList
 import io.circe.{Codec, Decoder, Encoder, Json, Printer}
@@ -164,4 +164,4 @@ object JsonSchema {
     Codec.from(Decoder[A], Encoder[A])
   )
 
-}
+}*/
