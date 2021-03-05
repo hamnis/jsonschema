@@ -2,12 +2,14 @@ package net.hamnaberg.schema
 
 import cats.Eval
 import cats.free.FreeApplicative
+import io.circe.Decoder
 import sttp.tapir.apispec.{Schema => TapirSchema}
 
 sealed trait Schema2[A] { self =>
   import Schema2._
   import structure._
   def compiled: TapirSchema = compiled_.value
+  def decoder: Decoder[A] = decoder_.value
 
   def asList: Schema2[List[A]] = Sequence(this)
   // def asVector: Schema2[Vector[A]] = list(this).imap(_.toVector)(_.toList)
@@ -23,6 +25,10 @@ sealed trait Schema2[A] { self =>
 
   val compiled_ : Eval[TapirSchema] = Eval.later(
     internal.Tapir.schemaFor(this)
+  )
+
+  val decoder_ : Eval[Decoder[A]] = Eval.later(
+    internal.decoding.decoderFor(this)
   )
 }
 
