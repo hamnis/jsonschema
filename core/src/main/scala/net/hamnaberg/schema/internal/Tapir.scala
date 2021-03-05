@@ -32,6 +32,7 @@ object Tapir {
       case Record(fields) => recordSchema(fields)
       case Isos(xmap) => schemaFor(xmap.schema)
       case Defer(f) => schemaFor(f())
+      case Custom(schema, _, _) => schema
     }
 
   def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): TapirSchema = {

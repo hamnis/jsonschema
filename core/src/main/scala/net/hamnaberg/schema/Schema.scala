@@ -11,6 +11,7 @@ import scala.collection.immutable
 sealed trait Schema[A] { self =>
   import Schema._
   import structure._
+
   def compiled: TapirSchema = compiled_.value
   def decoder: Decoder[A] = decoder_.value
   def encoder: Encoder[A] = encoder_.value
@@ -109,7 +110,11 @@ object Schema {
   implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector
   implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList
   implicit def seq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq
+
   def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
+
+  def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]) =
+    Custom(schema, encoder, decoder)
 }
 
 object structure {
@@ -122,6 +127,8 @@ object structure {
   case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   case class Isos[A](value: XMap[A]) extends Schema[A]
   case class Defer[A](value: () => Schema[A]) extends Schema[A]
+  case class Custom[A](_compiled: TapirSchema, _encoder: Encoder[A], _decoder: Decoder[A])
+      extends Schema[A]
 
   trait Field[R, E]
   object Field {

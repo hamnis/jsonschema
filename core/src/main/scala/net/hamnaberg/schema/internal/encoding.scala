@@ -26,6 +26,7 @@ object encoding {
     case Isos(xmap) =>
       fromSchema(xmap.schema).contramap(xmap.w)
     case Defer(f) => fromSchema(f())
+    case Custom(_, encoder, _) => encoder
   }
 
   def encodeList[A](schema: Schema[A]): Encoder[List[A]] =
