@@ -21,7 +21,7 @@ class PersonSchemaTest extends FunSuite {
       required = List("name", "age")
     )
 
-    val schema: JsonSchema[Person] = JsonSchema.forProduct2[Person, String, Int]("name", "age")(
+    val schema: JsonSchema[Person] = JsonSchema.forProduct2("name", "age")(
       Person.apply)(Person.unapply(_).get)
 
     val encoder: Encoder[Person] = schema.encoder
