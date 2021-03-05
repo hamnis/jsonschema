@@ -6,7 +6,12 @@ import cats.free.FreeApplicative
 import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
 import sttp.tapir.apispec.{Schema => TapirSchema}
 
+import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAccessor
+import java.util.UUID
 import scala.collection.immutable
+import scala.util.Try
 
 sealed trait Schema[A] { self =>
   import Schema._
@@ -106,6 +111,40 @@ object Schema {
   implicit val float: Schema[Float] =
     SNum(Some("float")).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
   implicit val string: Schema[String] = Str(None)
+  implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
+    Try(UUID.fromString(s)).toEither.leftMap(m =>
+      DecodingFailure(Option(m.getMessage).getOrElse("Not a valid UUID"), Nil)))(_.toString)
+
+  implicit val instant: Schema[Instant] =
+    _dateFormat(DateTimeFormatter.ISO_INSTANT, "date-time", (s, _) => Instant.parse(s))
+
+  implicit val zonedDateTime: Schema[ZonedDateTime] = _dateFormat(
+    DateTimeFormatter.ISO_ZONED_DATE_TIME,
+    "date-time",
+    (s, format) => ZonedDateTime.parse(s, format)
+  )
+
+  implicit val offsetDateTime: Schema[OffsetDateTime] = _dateFormat(
+    DateTimeFormatter.ISO_OFFSET_DATE_TIME,
+    "date-time",
+    (s, format) => OffsetDateTime.parse(s, format)
+  )
+
+  implicit val localDate: Schema[LocalDate] = _dateFormat(
+    DateTimeFormatter.ISO_LOCAL_DATE,
+    "date",
+    (s, format) => LocalDate.parse(s, format)
+  )
+
+  def _dateFormat[A <: TemporalAccessor](
+      formatter: DateTimeFormatter,
+      format: String,
+      f: (String, DateTimeFormatter) => A) =
+    Str(Some(format)).xmap(s =>
+      Try(f(s, formatter)).toEither.leftMap(m =>
+        DecodingFailure(
+          Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"),
+          Nil)))(b => formatter.format(b))
 
   implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector
   implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList
