@@ -11,22 +11,26 @@ object decoding {
 
   def fromSchema[A](schema2: Schema2[A]): Decoder[A] =
     schema2 match {
-      case structure.SInt =>
+      case SInt =>
         Decoder.decodeInt
-      case structure.SDouble =>
+      case SDouble =>
         Decoder.decodeDouble
-      case structure.SFloat =>
+      case SFloat =>
         Decoder.decodeFloat
-      case structure.SLong =>
+      case SLong =>
         Decoder.decodeLong
-      case structure.SBool =>
+      case SBool =>
         Decoder.decodeBoolean
-      case structure.Str =>
+      case Str =>
         Decoder.decodeString
-      case structure.Sequence(value, _, _) =>
+      case Sequence(value, _, _) =>
         decodeList(value)
-      case structure.Record(record) =>
+      case Record(record) =>
         decodeRecord(record)
+      case Isos(xmap) =>
+        Decoder.instance { c =>
+          fromSchema(xmap.schema)(c).flatMap(xmap.r)
+        }
     }
 
   def decodeList[A](element: Schema2[A]): Decoder[List[A]] =

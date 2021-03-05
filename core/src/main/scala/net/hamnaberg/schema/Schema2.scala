@@ -1,8 +1,9 @@
 package net.hamnaberg.schema
 
 import cats.Eval
+import cats.syntax.all._
 import cats.free.FreeApplicative
-import io.circe.{Decoder, Encoder, Json, JsonNumber}
+import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
 import sttp.tapir.apispec.{Schema => TapirSchema}
 
 sealed trait Schema2[A] { self =>
@@ -26,6 +27,26 @@ sealed trait Schema2[A] { self =>
   val read_ : Eval[Json => Decoder.Result[A]] = Eval.later(
 
   )*/
+
+  def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema2[B] =
+    Isos {
+      new XMap[B] {
+        type Repr = A
+        val schema = self
+        val r = f
+        val w = g
+      }
+    }
+
+  def imap[B](f: A => B)(g: B => A): Schema2[B] =
+    Isos {
+      new XMap[B] {
+        type Repr = A
+        val schema = self
+        val r = f.andThen(_.asRight)
+        val w = g
+      }
+    }
 
   val compiled_ : Eval[TapirSchema] = Eval.later(
     internal.Tapir.schemaFor(this)
@@ -58,16 +79,16 @@ object Schema2 {
 
     def pure[A](a: A): FreeApplicative[Field[R, *], A] = FreeApplicative.pure(a)
 
-    /*def const[V](
-                  name: String,
-                  value: V
-                )(implicit valueSchema: Schema2[V]): FreeApplicative[Field[R, *], Unit] =
+    def const[V](
+        name: String,
+        value: V
+    )(implicit valueSchema: Schema2[V]): FreeApplicative[Field[R, *], Unit] =
       apply(name, _ => ()) {
         valueSchema.xmap { r =>
-          Either.cond((r == value), (), ReadError())
-        }(_ => value.asRight)
+          Either.cond((r == value), (), DecodingFailure("Const not equal to self", Nil))
+        }(_ => value)
       }
-     */
+
     def opt[E](
         name: String,
         get: R => Option[E]
@@ -93,6 +114,7 @@ object structure {
   case class Sequence[A](value: Schema2[A], min: Option[Int] = None, max: Option[Int] = None)
       extends Schema2[List[A]]
   case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema2[R]
+  case class Isos[A](value: XMap[A]) extends Schema2[A]
 
   trait Field[R, E]
   object Field {
@@ -107,5 +129,12 @@ object structure {
         elemSchema: Schema2[E],
         get: R => Option[E]
     ) extends Field[R, Option[E]]
+  }
+
+  trait XMap[A] {
+    type Repr
+    def schema: Schema2[Repr]
+    def w: A => Repr
+    def r: Repr => Decoder.Result[A]
   }
 }

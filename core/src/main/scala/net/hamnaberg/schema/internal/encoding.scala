@@ -11,22 +11,24 @@ object encoding {
   import structure._
 
   def fromSchema[A](schema: Schema2[A]): Encoder[A] = schema match {
-    case structure.SInt =>
+    case SInt =>
       Encoder.encodeInt
-    case structure.SDouble =>
+    case SDouble =>
       Encoder.encodeDouble
-    case structure.SFloat =>
+    case SFloat =>
       Encoder.encodeFloat
-    case structure.SLong =>
+    case SLong =>
       Encoder.encodeLong
-    case structure.SBool =>
+    case SBool =>
       Encoder.encodeBoolean
-    case structure.Str =>
+    case Str =>
       Encoder.encodeString
     case Sequence(value, _, _) =>
       encodeList(value)
     case Record(rec) =>
       Encoder.instance(encodeObject(rec).andThen(_.asJson))
+    case Isos(xmap) =>
+      fromSchema(xmap.schema).contramap(xmap.w)
   }
 
   def encodeList[A](schema: Schema2[A]): Encoder[List[A]] =

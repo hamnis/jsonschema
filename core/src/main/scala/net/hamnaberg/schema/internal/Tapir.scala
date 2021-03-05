@@ -34,6 +34,7 @@ object Tapir {
           maxItems = max
         )
       case Record(fields) => recordSchema(fields)
+      case Isos(xmap) => schemaFor(xmap.schema)
     }
 
   def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): Schema = {
