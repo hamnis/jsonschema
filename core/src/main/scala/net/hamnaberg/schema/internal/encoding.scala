@@ -19,6 +19,8 @@ object encoding {
       Encoder.encodeBoolean
     case Str(_) =>
       Encoder.encodeString
+    case Enumeration(_) =>
+      Encoder.encodeString
     case Sequence(value, _, _) =>
       encodeList(value)
     case Record(rec) =>

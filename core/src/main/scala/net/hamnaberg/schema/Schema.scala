@@ -166,6 +166,7 @@ object structure {
   case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   case class Isos[A](value: XMap[A]) extends Schema[A]
   case class Defer[A](value: () => Schema[A]) extends Schema[A]
+  case class Enumeration(allowed: List[String]) extends Schema[String]
   case class Custom[A](_compiled: TapirSchema, _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
 
