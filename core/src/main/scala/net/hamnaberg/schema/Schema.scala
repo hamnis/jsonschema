@@ -152,7 +152,7 @@ object Schema {
 
   def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
 
-  def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]) =
+  def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
     Custom(schema, encoder, decoder)
 }
 
