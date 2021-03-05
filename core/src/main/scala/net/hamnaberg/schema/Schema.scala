@@ -104,7 +104,7 @@ object Schema {
       JsonNumber.fromDecimalStringUnsafe(i.toString))
   implicit val float: Schema[Float] =
     SNum(Some("float")).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
-  implicit val string: Schema[String] = Str
+  implicit val string: Schema[String] = Str(None)
 
   implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector
   implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList
@@ -116,7 +116,7 @@ object structure {
   case class SInt(format: Option[String]) extends Schema[JsonNumber]
   case class SNum(format: Option[String]) extends Schema[JsonNumber]
   case object SBool extends Schema[Boolean]
-  case object Str extends Schema[String]
+  case class Str(format: Option[String] = None) extends Schema[String]
   case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
       extends Schema[List[A]]
   case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]

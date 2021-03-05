@@ -17,7 +17,7 @@ object encoding {
       Encoder.encodeJsonNumber
     case SBool =>
       Encoder.encodeBoolean
-    case Str =>
+    case Str(_) =>
       Encoder.encodeString
     case Sequence(value, _, _) =>
       encodeList(value)

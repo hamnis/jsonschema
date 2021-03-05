@@ -19,8 +19,8 @@ object Tapir {
         TapirSchema(`type` = Some(SchemaType.Number), nullable = Some(false), format = format)
       case SBool =>
         TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
-      case Str =>
-        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false))
+      case Str(format) =>
+        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), format = format)
       case Sequence(value, min, max) =>
         TapirSchema(
           `type` = Some(SchemaType.Array),

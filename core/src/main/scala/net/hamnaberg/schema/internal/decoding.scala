@@ -17,7 +17,7 @@ object decoding {
         Decoder.decodeJsonNumber
       case SBool =>
         Decoder.decodeBoolean
-      case Str =>
+      case Str(_) =>
         Decoder.decodeString
       case Sequence(value, _, _) =>
         decodeList(value)
