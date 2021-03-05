@@ -52,10 +52,17 @@ object Tapir {
         })
         .getConst
 
+    val required = value.collect {
+      case (n, compiled) if compiled.nullable.forall(!_) => n
+    }
+
     Schema(
       `type` = Some(SchemaType.Object),
       properties = ListMap.from(value.map { case (name, schema) =>
         (name, schema.asRight[Reference])
-      }))
+      }),
+      required = required,
+      nullable = Some(false)
+    )
   }
 }

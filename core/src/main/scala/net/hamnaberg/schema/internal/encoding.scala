@@ -1,0 +1,63 @@
+package net.hamnaberg.schema
+package internal
+
+import cats._
+import cats.syntax.all._
+import cats.free.FreeApplicative
+import io.circe.{Encoder, Json, JsonObject}
+import io.circe.syntax._
+
+object encoding {
+  import structure._
+
+  def fromSchema[A](schema: Schema2[A]): Encoder[A] = schema match {
+    case structure.SInt =>
+      Encoder.encodeInt
+    case structure.SDouble =>
+      Encoder.encodeDouble
+    case structure.SFloat =>
+      Encoder.encodeFloat
+    case structure.SLong =>
+      Encoder.encodeLong
+    case structure.SBool =>
+      Encoder.encodeBoolean
+    case structure.Str =>
+      Encoder.encodeString
+    case Sequence(value, _, _) =>
+      encodeList(value)
+    case Record(rec) =>
+      Encoder.instance(encodeObject(rec).andThen(_.asJson))
+  }
+
+  def encodeList[A](schema: Schema2[A]): Encoder[List[A]] =
+    Encoder.encodeList[A](fromSchema[A](schema))
+
+  def encodeObject[R](record: FreeApplicative[Field[R, *], R]) = {
+    type Target[A] = R => Vector[(String, Json)]
+
+    record
+      .analyze {
+        new (Field[R, *] ~> Target) {
+          def write[E](name: String, schema: Schema2[E], elem: E) =
+            Vector(name -> fromSchema(schema).apply(elem))
+
+          override def apply[A](fa: Field[R, A]): Target[A] =
+            fa match {
+              case Field.Optional(name, elemSchema, get) =>
+                (r: R) => {
+                  val elem = get(r)
+                  elem.foldMap(write(name, elemSchema, _))
+                }
+
+              case Field.Required(name, elemSchema, get) =>
+                (r: R) => {
+                  val elem = get(r)
+                  write(name, elemSchema, elem)
+                }
+            }
+        }
+      }
+      .andThen(JsonObject.fromIterable(_))
+  }
+
+}

@@ -2,7 +2,7 @@ package net.hamnaberg.schema
 
 import cats.Eval
 import cats.free.FreeApplicative
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder, Json, JsonNumber}
 import sttp.tapir.apispec.{Schema => TapirSchema}
 
 sealed trait Schema2[A] { self =>
@@ -10,6 +10,10 @@ sealed trait Schema2[A] { self =>
   import structure._
   def compiled: TapirSchema = compiled_.value
   def decoder: Decoder[A] = decoder_.value
+  def encoder: Encoder[A] = encoder_.value
+
+  def encode(a: A): Json = encoder(a)
+  def decode(json: Json): Decoder.Result[A] = decoder.decodeJson(json)
 
   def asList: Schema2[List[A]] = Sequence(this)
   // def asVector: Schema2[Vector[A]] = list(this).imap(_.toVector)(_.toList)
@@ -28,12 +32,54 @@ sealed trait Schema2[A] { self =>
   )
 
   val decoder_ : Eval[Decoder[A]] = Eval.later(
-    internal.decoding.decoderFor(this)
+    internal.decoding.fromSchema(this)
+  )
+  val encoder_ : Eval[Encoder[A]] = Eval.later(
+    internal.encoding.fromSchema(this)
   )
 }
 
 object Schema2 {
   import structure._
+
+  def fields[R](p: FreeApplicative[Field[R, *], R]): Schema2[R] = Record(p)
+  def record[R](
+      b: FieldBuilder[R] => FreeApplicative[Field[R, *], R]
+  ): Schema2[R] =
+    fields(b(field))
+  def field[R] = new FieldBuilder[R]
+
+  class FieldBuilder[R] {
+    def apply[E](
+        name: String,
+        get: R => E
+    )(implicit elemSchema: Schema2[E]): FreeApplicative[Field[R, *], E] =
+      FreeApplicative.lift(Field.Required(name, elemSchema, get))
+
+    def pure[A](a: A): FreeApplicative[Field[R, *], A] = FreeApplicative.pure(a)
+
+    /*def const[V](
+                  name: String,
+                  value: V
+                )(implicit valueSchema: Schema2[V]): FreeApplicative[Field[R, *], Unit] =
+      apply(name, _ => ()) {
+        valueSchema.xmap { r =>
+          Either.cond((r == value), (), ReadError())
+        }(_ => value.asRight)
+      }
+     */
+    def opt[E](
+        name: String,
+        get: R => Option[E]
+    )(implicit elemSchema: Schema2[E]): FreeApplicative[Field[R, *], Option[E]] =
+      FreeApplicative.lift(
+        Field.Optional(name, elemSchema, get): Field[R, Option[E]]
+      )
+  }
+
+  implicit val int: Schema2[Int] = SInt
+  implicit val string: Schema2[String] = Str
+
 }
 
 object structure {
@@ -41,6 +87,7 @@ object structure {
   case object SDouble extends Schema2[Double]
   case object SFloat extends Schema2[Float]
   case object SLong extends Schema2[Long]
+  //case class Num(format: Option[String]) extends Schema2[JsonNumber]
   case object SBool extends Schema2[Boolean]
   case object Str extends Schema2[String]
   case class Sequence[A](value: Schema2[A], min: Option[Int] = None, max: Option[Int] = None)

@@ -9,7 +9,7 @@ import io.circe.{Decoder, HCursor}
 object decoding {
   import structure._
 
-  def decoderFor[A](schema2: Schema2[A]): Decoder[A] =
+  def fromSchema[A](schema2: Schema2[A]): Decoder[A] =
     schema2 match {
       case structure.SInt =>
         Decoder.decodeInt
@@ -30,7 +30,7 @@ object decoding {
     }
 
   def decodeList[A](element: Schema2[A]): Decoder[List[A]] =
-    Decoder.decodeList(decoderFor[A](element))
+    Decoder.decodeList(fromSchema[A](element))
 
   def decodeRecord[R](fields: FreeApplicative[Field[R, *], R]) = Decoder.instance {
     type Target[A] = Kleisli[Decoder.Result[*], HCursor, A]
@@ -41,11 +41,11 @@ object decoding {
           case Field.Optional(name, elemSchema, _) =>
             Kleisli { c =>
               c.get[Option[A]](name)(
-                Decoder.decodeOption(decoderFor[A](elemSchema.asInstanceOf[Schema2[A]])))
+                Decoder.decodeOption(fromSchema[A](elemSchema.asInstanceOf[Schema2[A]])))
             }
           case Field.Required(name, elemSchema, _) =>
             Kleisli { c =>
-              c.downField(name).as(decoderFor[A](elemSchema))
+              c.downField(name).as(fromSchema[A](elemSchema))
             }
         }
       }
