@@ -27,6 +27,7 @@ object decoding {
         Decoder.instance { c =>
           fromSchema(xmap.schema)(c).flatMap(xmap.r)
         }
+      case Defer(f) => fromSchema(f())
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =

@@ -25,6 +25,7 @@ object encoding {
       Encoder.instance(encodeObject(rec).andThen(_.asJson))
     case Isos(xmap) =>
       fromSchema(xmap.schema).contramap(xmap.w)
+    case Defer(f) => fromSchema(f())
   }
 
   def encodeList[A](schema: Schema[A]): Encoder[List[A]] =
