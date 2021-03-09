@@ -69,8 +69,7 @@ object encoding {
       MonoidK[Option].algebra
 
     val maybe =
-      alts.foldMap(alt =>
-        alt.prism.tryGet(superType).map(caseValue => fromSchema(alt.caseSchema).apply(caseValue)))
+      alts.foldMap(alt => alt.prism.tryGet(superType).map(caseValue => fromSchema(alt.caseSchema).apply(caseValue)))
     maybe.getOrElse(sys.error("Unable to create json value from alternative"))
   }
 

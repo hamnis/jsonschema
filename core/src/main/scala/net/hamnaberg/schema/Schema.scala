@@ -133,8 +133,7 @@ object Schema {
     SInt(Some("int64")).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   implicit val double: Schema[Double] =
-    SNum(Some("double")).xmap(_.toDouble.asRight)(i =>
-      JsonNumber.fromDecimalStringUnsafe(i.toString))
+    SNum(Some("double")).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
   implicit val float: Schema[Float] =
     SNum(Some("float")).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
   implicit val string: Schema[String] = Str(None)
@@ -169,9 +168,8 @@ object Schema {
       f: (String, DateTimeFormatter) => A) =
     Str(Some(format)).xmap(s =>
       Try(f(s, formatter)).toEither.leftMap(m =>
-        DecodingFailure(
-          Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"),
-          Nil)))(b => formatter.format(b))
+        DecodingFailure(Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"), Nil)))(b =>
+      formatter.format(b))
 
   implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector
   implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList
@@ -183,17 +181,13 @@ object structure {
   case class SNum(format: Option[String]) extends Schema[JsonNumber]
   case object SBool extends Schema[Boolean]
   case class Str(format: Option[String] = None) extends Schema[String]
-  case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
-      extends Schema[List[A]]
+  case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None) extends Schema[List[A]]
   case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   case class Isos[A](value: XMap[A]) extends Schema[A]
   case class Defer[A](value: () => Schema[A]) extends Schema[A]
   case class Enumeration(allowed: List[String]) extends Schema[String]
   case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
-  case class Custom[A](
-      _compiled: ReferenceOr[TapirSchema],
-      _encoder: Encoder[A],
-      _decoder: Decoder[A])
+  case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
 
   trait Field[R, E]

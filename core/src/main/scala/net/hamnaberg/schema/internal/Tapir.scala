@@ -22,10 +22,7 @@ object Tapir {
       case Str(format) =>
         TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), format = format)
       case Enumeration(allowed) =>
-        TapirSchema(
-          `type` = Some(SchemaType.String),
-          nullable = Some(false),
-          `enum` = Some(allowed))
+        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), `enum` = Some(allowed))
       case Sequence(value, min, max) =>
         TapirSchema(
           `type` = Some(SchemaType.Array),
