@@ -2,8 +2,10 @@ package net.hamnaberg.schema
 package internal
 
 import cats._
-import cats.data.Kleisli
+import cats.data.{Chain, Kleisli}
 import cats.free.FreeApplicative
+import cats.syntax.all._
+
 import io.circe.{Decoder, HCursor}
 
 object decoding {
@@ -32,6 +34,7 @@ object decoding {
         }
       case Defer(f) => fromSchema(f())
       case Custom(_, _, decoder) => decoder
+      case Sum(alts) => decodeSum(alts)
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =
@@ -45,8 +48,8 @@ object decoding {
         override def apply[A](fa: Field[R, A]): Target[A] = fa match {
           case Field.Optional(name, elemSchema, _) =>
             Kleisli { c =>
-              c.get[Option[A]](name)(
-                Decoder.decodeOption(fromSchema[A](elemSchema.asInstanceOf[Schema[A]])))
+              val from = fromSchema[A](elemSchema.asInstanceOf[Schema[A]])
+              c.get[Option[A]](name)(Decoder.decodeOption(from))
             }
           case Field.Required(name, elemSchema, _) =>
             Kleisli { c =>
@@ -56,5 +59,13 @@ object decoding {
       }
     }.run
   }
+
+  def decodeSum[R](alts: Chain[Alt[R]]): Decoder[R] =
+    alts
+      .map { alt =>
+        fromSchema(alt.caseSchema).map(alt.prism.inject(_))
+      }
+      .toList
+      .reduce(_ orElse _)
 
 }

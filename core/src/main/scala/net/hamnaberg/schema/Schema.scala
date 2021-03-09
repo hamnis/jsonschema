@@ -1,6 +1,7 @@
 package net.hamnaberg.schema
 
 import cats.Eval
+import cats.data.Chain
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
@@ -69,7 +70,18 @@ object Schema {
       b: FieldBuilder[R] => FreeApplicative[Field[R, *], R]
   ): Schema[R] =
     fields(b(field))
+  def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
+
+  def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
+    Custom(schema, encoder, decoder)
+
+  def alternatives[A](cases: Chain[Alt[A]]): Schema[A] =
+    Sum(cases)
+  def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
+    alternatives(b(alt))
+
   def field[R] = new FieldBuilder[R]
+  def alt[R] = new AltBuilder[R]
 
   class FieldBuilder[R] {
     def apply[E](
@@ -97,6 +109,19 @@ object Schema {
       FreeApplicative.lift(
         Field.Optional(name, elemSchema, get): Field[R, Option[E]]
       )
+  }
+
+  class AltBuilder[A] {
+    def apply[B](
+        caseSchema_ : Schema[B]
+    )(implicit prism_ : Prism[A, B]): Chain[Alt[A]] =
+      Chain.one {
+        new Alt[A] {
+          type Case = B
+          val caseSchema = caseSchema_
+          val prism = prism_
+        }
+      }
   }
 
   implicit val int: Schema[Int] =
@@ -149,11 +174,6 @@ object Schema {
   implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector
   implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList
   implicit def seq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq
-
-  def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
-
-  def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
-    Custom(schema, encoder, decoder)
 }
 
 object structure {
@@ -167,6 +187,7 @@ object structure {
   case class Isos[A](value: XMap[A]) extends Schema[A]
   case class Defer[A](value: () => Schema[A]) extends Schema[A]
   case class Enumeration(allowed: List[String]) extends Schema[String]
+  case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   case class Custom[A](_compiled: TapirSchema, _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
 
@@ -183,6 +204,12 @@ object structure {
         elemSchema: Schema[E],
         get: R => Option[E]
     ) extends Field[R, Option[E]]
+  }
+
+  trait Alt[A] {
+    type Case
+    def caseSchema: Schema[Case]
+    def prism: Prism[A, Case]
   }
 
   trait XMap[A] {

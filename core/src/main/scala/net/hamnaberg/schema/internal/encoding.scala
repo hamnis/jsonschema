@@ -2,6 +2,7 @@ package net.hamnaberg.schema
 package internal
 
 import cats._
+import cats.data.Chain
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe.{Encoder, Json, JsonObject}
@@ -29,6 +30,7 @@ object encoding {
       fromSchema(xmap.schema).contramap(xmap.w)
     case Defer(f) => fromSchema(f())
     case Custom(_, encoder, _) => encoder
+    case Sum(alts) => encodeAlternatives(alts)
   }
 
   def encodeList[A](schema: Schema[A]): Encoder[List[A]] =
@@ -60,6 +62,16 @@ object encoding {
         }
       }
       .andThen(JsonObject.fromIterable(_))
+  }
+
+  def encodeAlternatives[A](alts: Chain[Alt[A]]): Encoder[A] = Encoder.instance { superType =>
+    implicit def orElse[T]: Monoid[Option[T]] =
+      MonoidK[Option].algebra
+
+    val maybe =
+      alts.foldMap(alt =>
+        alt.prism.tryGet(superType).map(caseValue => fromSchema(alt.caseSchema).apply(caseValue)))
+    maybe.getOrElse(sys.error("Unable to create json value from alternative"))
   }
 
 }
