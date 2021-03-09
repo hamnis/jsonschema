@@ -5,7 +5,7 @@ import cats.data.Chain
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
-import sttp.tapir.apispec.{Schema => TapirSchema}
+import sttp.tapir.apispec.{Reference, ReferenceOr, Schema => TapirSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -29,6 +29,8 @@ sealed trait Schema[A] { self =>
   def asVector: Schema[Vector[A]] = list(this).imap(_.toVector)(_.toList)
   def asSeq: Schema[immutable.Seq[A]] =
     list(this).imap(_.toSeq: immutable.Seq[A])(_.toList)
+
+  def reference(ref: String): Schema[A] = Custom(Left(Reference(ref)), encoder, decoder)
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
     Isos {
@@ -73,7 +75,7 @@ object Schema {
   def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
 
   def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
-    Custom(schema, encoder, decoder)
+    Custom(Right(schema), encoder, decoder)
 
   def alternatives[A](cases: Chain[Alt[A]]): Schema[A] =
     Sum(cases)
@@ -188,7 +190,10 @@ object structure {
   case class Defer[A](value: () => Schema[A]) extends Schema[A]
   case class Enumeration(allowed: List[String]) extends Schema[String]
   case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
-  case class Custom[A](_compiled: TapirSchema, _encoder: Encoder[A], _decoder: Decoder[A])
+  case class Custom[A](
+      _compiled: ReferenceOr[TapirSchema],
+      _encoder: Encoder[A],
+      _decoder: Decoder[A])
       extends Schema[A]
 
   trait Field[R, E]

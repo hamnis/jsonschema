@@ -37,7 +37,7 @@ object Tapir {
       case Record(fields) => recordSchema(fields)
       case Isos(xmap) => schemaFor(xmap.schema)
       case Defer(f) => schemaFor(f())
-      case Custom(schema, _, _) => schema
+      case Custom(schema, _, _) => TapirSchema(allOf = List(schema))
       case Sum(alts) =>
         TapirSchema(oneOf = alts.map(c => Right(schemaFor(c.caseSchema))).toList)
     }
