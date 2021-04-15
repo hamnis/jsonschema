@@ -1,10 +1,11 @@
 package net.hamnaberg.schema
 
 import cats.Eval
-import cats.data.Chain
+import cats.data.{Chain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
+import net.hamnaberg.schema.internal.validation
 import sttp.tapir.apispec.{Reference, ReferenceOr, Schema => TapirSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
@@ -24,6 +25,7 @@ sealed trait Schema[A] { self =>
 
   def encode(a: A): Json = encoder(a)
   def decode(json: Json): Decoder.Result[A] = decoder.decodeJson(json)
+  def validate(json: Json): Validation[A] = validation.eval(this, json, Nil)
 
   def asList: Schema[List[A]] = Sequence(this)
   def asVector: Schema[Vector[A]] = list(this).imap(_.toVector)(_.toList)
@@ -131,6 +133,9 @@ object Schema {
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   implicit val long: Schema[Long] =
     SInt(Some("int64")).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
+      JsonNumber.fromIntegralStringUnsafe(i.toString))
+  implicit val bigInt: Schema[BigInt] =
+    SInt(None).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   implicit val double: Schema[Double] =
     SNum(Some("double")).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
