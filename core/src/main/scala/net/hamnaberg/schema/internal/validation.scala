@@ -121,10 +121,11 @@ object validation {
         override def apply[A](fa: Field[R, A]): Const[ValidatedNel[ValidationError, Unit], A] = fa match {
           case Field.Optional(name, elemSchema, _) =>
             val next = CursorOp.Field(name) :: history
-            json(name) match {
-              case Some(value) => Const(eval(elemSchema, value, next).map(_ => ()))
-              case None => Const(().validNel)
-            }
+            Const(json(name) match {
+              case Some(Json.Null) => ().validNel
+              case Some(value) => eval(elemSchema, value, next).map(_ => ())
+              case None => ().validNel
+            })
           case Field.Required(name, elemSchema, _) =>
             val next = CursorOp.Field(name) :: history
             json(name) match {
