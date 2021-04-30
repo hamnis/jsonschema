@@ -72,6 +72,8 @@ sealed trait Schema[A] { self =>
 object Schema {
   import structure._
 
+  def apply[A](implicit S: Schema[A]) = S
+
   def boundedInt(min: Bound, max: Bound): Schema[Int] =
     SInt(Some("int32"), Some(ValidBounds(min, max))).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
