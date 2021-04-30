@@ -203,7 +203,8 @@ object structure {
   final case class SNum(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
   final case object SBool extends Schema[Boolean]
   final case class Str(format: Option[String] = None) extends Schema[String]
-  final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None) extends Schema[List[A]]
+  final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
+      extends Schema[List[A]]
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   final case class Isos[A](value: XMap[A]) extends Schema[A]
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
