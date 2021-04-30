@@ -13,10 +13,12 @@ object Tapir {
 
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
-      case SInt(format) =>
-        TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
-      case SNum(format) =>
-        TapirSchema(`type` = Some(SchemaType.Number), nullable = Some(false), format = format)
+      case SInt(format, bounds) =>
+        val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
+        bounds.fold(baseSchema)(boundsSchema(baseSchema, _))
+      case SNum(format, bounds) =>
+        val baseSchema = TapirSchema(`type` = Some(SchemaType.Number), nullable = Some(false), format = format)
+        bounds.fold(baseSchema)(boundsSchema(baseSchema, _))
       case SBool =>
         TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
       case Str(format) =>
@@ -67,5 +69,32 @@ object Tapir {
       required = required,
       nullable = Some(false)
     )
+  }
+
+  private def boundsSchema(schema: TapirSchema, valid: ValidBounds) = valid match {
+    case ValidBounds(Bound.Inclusive(min), Bound.Inclusive(max)) =>
+      schema.copy(
+        minimum = Some(min),
+        exclusiveMinimum = Some(false),
+        maximum = Some(max),
+        exclusiveMaximum = Some(false))
+    case ValidBounds(Bound.Exclusive(min), Bound.Inclusive(max)) =>
+      schema.copy(
+        minimum = Some(min),
+        exclusiveMinimum = Some(true),
+        maximum = Some(max),
+        exclusiveMaximum = Some(false))
+    case ValidBounds(Bound.Inclusive(min), Bound.Exclusive(max)) =>
+      schema.copy(
+        minimum = Some(min),
+        exclusiveMinimum = Some(false),
+        maximum = Some(max),
+        exclusiveMaximum = Some(true))
+    case ValidBounds(Bound.Exclusive(min), Bound.Exclusive(max)) =>
+      schema.copy(
+        minimum = Some(min),
+        exclusiveMinimum = Some(true),
+        maximum = Some(max),
+        exclusiveMaximum = Some(true))
   }
 }

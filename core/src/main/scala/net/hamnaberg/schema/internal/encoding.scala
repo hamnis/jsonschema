@@ -12,9 +12,9 @@ object encoding {
   import structure._
 
   def fromSchema[A](schema: Schema[A]): Encoder[A] = schema match {
-    case SInt(_) =>
+    case SInt(_, _) =>
       Encoder.encodeJsonNumber
-    case SNum(_) =>
+    case SNum(_, _) =>
       Encoder.encodeJsonNumber
     case SBool =>
       Encoder.encodeBoolean

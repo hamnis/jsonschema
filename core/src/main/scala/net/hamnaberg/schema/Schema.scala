@@ -72,6 +72,20 @@ sealed trait Schema[A] { self =>
 object Schema {
   import structure._
 
+  def boundedInt(min: Bound, max: Bound): Schema[Int] =
+    SInt(Some("int32"), Some(ValidBounds(min, max))).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
+      JsonNumber.fromIntegralStringUnsafe(i.toString))
+  def boundedLong(min: Bound, max: Bound): Schema[Long] =
+    SInt(Some("int64"), Some(ValidBounds(min, max))).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
+      JsonNumber.fromIntegralStringUnsafe(i.toString))
+  def boundedDouble(min: Bound, max: Bound): Schema[Double] =
+    SNum(Some("double"), Some(ValidBounds(min, max))).xmap(_.toDouble.asRight)(i =>
+      JsonNumber.fromDecimalStringUnsafe(i.toString))
+
+  def rangedFloat(min: Bound, max: Bound): Schema[Float] =
+    SNum(Some("float"), Some(ValidBounds(min, max))).xmap(_.toFloat.asRight)(i =>
+      JsonNumber.fromDecimalStringUnsafe(i.toString))
+
   def fields[R](p: FreeApplicative[Field[R, *], R]): Schema[R] = Record(p)
   def record[R](
       b: FieldBuilder[R] => FreeApplicative[Field[R, *], R]
@@ -132,18 +146,18 @@ object Schema {
   }
 
   implicit val int: Schema[Int] =
-    SInt(Some("int32")).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
+    SInt(Some("int32"), None).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   implicit val long: Schema[Long] =
-    SInt(Some("int64")).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
+    SInt(Some("int64"), None).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   implicit val bigInt: Schema[BigInt] =
-    SInt(None).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
+    SInt(None, None).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   implicit val double: Schema[Double] =
-    SNum(Some("double")).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
+    SNum(Some("double"), None).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
   implicit val float: Schema[Float] =
-    SNum(Some("float")).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
+    SNum(Some("float"), None).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
   implicit val string: Schema[String] = Str(None)
   implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
     Try(UUID.fromString(s)).toEither.leftMap(m =>
@@ -185,8 +199,8 @@ object Schema {
 }
 
 object structure {
-  case class SInt(format: Option[String]) extends Schema[JsonNumber]
-  case class SNum(format: Option[String]) extends Schema[JsonNumber]
+  case class SInt(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
+  case class SNum(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
   case object SBool extends Schema[Boolean]
   case class Str(format: Option[String] = None) extends Schema[String]
   case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None) extends Schema[List[A]]

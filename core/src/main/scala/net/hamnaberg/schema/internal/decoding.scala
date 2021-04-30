@@ -13,9 +13,9 @@ object decoding {
 
   def fromSchema[A](schema2: Schema[A]): Decoder[A] =
     schema2 match {
-      case SInt(_) =>
+      case SInt(_, _) =>
         Decoder.decodeJsonNumber
-      case SNum(_) =>
+      case SNum(_, _) =>
         Decoder.decodeJsonNumber
       case SBool =>
         Decoder.decodeBoolean
