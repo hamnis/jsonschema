@@ -70,10 +70,7 @@ class PersonSchemaTest extends FunSuite {
 
     validResult.fold(
       r => fail(s"expected valid $r"),
-      { case (s, j) =>
-        assert(s eq Person.schema)
-        assert(validJson eq j)
-      }
+      j => assert(validJson eq j)
     )
   }
 }

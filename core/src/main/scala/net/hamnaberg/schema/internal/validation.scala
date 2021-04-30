@@ -6,16 +6,16 @@ import cats.free.FreeApplicative
 import cats.syntax.all._
 import io.circe.{CursorOp, Json, JsonObject}
 import net.hamnaberg.schema.structure.Field
-import net.hamnaberg.schema.{Schema, Validation, ValidationError, structure}
+import net.hamnaberg.schema.{Schema, ValidationError, structure}
 
 object validation {
-  def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): Validation[A] =
+  def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): ValidatedNel[ValidationError, Json] =
     schema match {
       case structure.SInt(Some("int32")) =>
         val error = ValidationError("Not a valid int", history)
         if (json.isNumber) {
           val num = json.asNumber
-          num.flatMap(_.toInt).as(schema -> json).toValidNel(error)
+          num.flatMap(_.toInt).as(json).toValidNel(error)
         } else {
           error.invalidNel
         }
@@ -23,7 +23,7 @@ object validation {
         val error = ValidationError("Not a valid long", history)
         if (json.isNumber) {
           val num = json.asNumber
-          num.flatMap(_.toLong).as(schema -> json).toValidNel(error)
+          num.flatMap(_.toLong).as(json).toValidNel(error)
         } else {
           error.invalidNel
         }
@@ -34,25 +34,25 @@ object validation {
         val bigint = {
           if (json.isNumber) {
             val num = json.asNumber
-            num.flatMap(_.toLong).as(schema -> json).toValidNel(error)
+            num.flatMap(_.toLong).as(json).toValidNel(error)
           } else {
             error.invalidNel
           }
         }
-        left.orElse(right).orElse(bigint).as(schema -> json)
+        left.orElse(right).orElse(bigint).as(json)
       case structure.SNum(_) =>
         val error = ValidationError("Not a valid long", history)
         if (json.isNumber) {
-          (schema -> json).valid
+          json.validNel
         } else {
           error.invalidNel
         }
       case structure.SBool =>
         val error = ValidationError("Not a valid boolean", history)
-        if (json.isBoolean) (schema -> json).valid else error.invalidNel
+        if (json.isBoolean) json.validNel else error.invalidNel
       case structure.Str(None) =>
         val error = ValidationError("Not a valid string", history)
-        json.asString.as(schema -> json).toValidNel(error)
+        json.asString.as(json).toValidNel(error)
 
       case structure.Str(Some(frmt)) =>
         decoding
@@ -60,7 +60,7 @@ object validation {
           .decodeJson(json)
           .fold(
             e => ValidationError(s"Not a valid formatted string ($frmt)", history ++ e.history).invalidNel,
-            _ => (schema -> json).validNel
+            _ => json.validNel
           )
 
       case structure.Sequence(elementSchema, min, max) =>
@@ -76,25 +76,25 @@ object validation {
             val validItems = array.zipWithIndex.traverse { case (item, idx) =>
               eval(elementSchema, item, CursorOp.DownN(idx) :: history).map(_ => ())
             }
-            (validMin, validMax, validItems).mapN((_, _, _) => schema -> json)
+            (validMin, validMax, validItems).mapN((_, _, _) => json)
           case None => error.invalidNel
         }
       case structure.Record(fields) =>
         val error = ValidationError("Not a valid object", history)
         json.asObject match {
           case Some(obj) =>
-            validateRecord(fields, obj, history).map(_ => schema -> json)
+            validateRecord(fields, obj, history).map(_ => json)
           case None => error.invalidNel
         }
 
       case structure.Isos(xmap) =>
-        eval(xmap.schema, json, history).map(_ => schema -> json)
+        eval(xmap.schema, json, history).map(_ => json)
       case structure.Defer(s) =>
         eval(s(), json, history)
       case structure.Enumeration(allowed) =>
         val error = ValidationError(s"Not a valid enumeration, expected one of $allowed", history)
         if (json.isString)
-          json.asString.filter(allowed.contains).as(schema -> json).toValidNel(error)
+          json.asString.filter(allowed.contains).as(json).toValidNel(error)
         else error.invalidNel
       case structure.Sum(alts) =>
         alts.toList.toNel match {
@@ -103,7 +103,7 @@ object validation {
               .foldLeft(
                 eval(nel.head.caseSchema, json, history).map(_ => ())
               )((agg, alt) => agg.orElse(eval(alt.caseSchema, json, history).map(_ => ())))
-              .map(_ => schema -> json)
+              .map(_ => json)
           case None => ValidationError("No cases for Sum type", history).invalidNel
         }
       case structure.Custom(_, _, _decoder) =>
@@ -111,7 +111,7 @@ object validation {
           .decodeAccumulating(json.hcursor)
           .fold(
             nel => nel.map(d => ValidationError(d.message, history ++ d.history)).invalid,
-            _ => (schema -> json).validNel
+            _ => json.validNel
           )
     }
 

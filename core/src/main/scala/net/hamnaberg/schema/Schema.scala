@@ -25,7 +25,10 @@ sealed trait Schema[A] { self =>
 
   def encode(a: A): Json = encoder(a)
   def decode(json: Json): Decoder.Result[A] = decoder.decodeJson(json)
-  def validate(json: Json): Validation[A] = validation.eval(this, json, Nil)
+  def validate(json: Json): ValidatedNel[ValidationError, Json] = validation.eval(this, json, Nil)
+  def validateDecode(json: Json): ValidatedNel[ValidationError, A] = validation
+    .eval(this, json, Nil)
+    .andThen(decode(_).fold(err => ValidationError(err.message, err.history).invalidNel, _.validNel))
 
   def asList: Schema[List[A]] = Sequence(this)
   def asVector: Schema[Vector[A]] = list(this).imap(_.toVector)(_.toList)
