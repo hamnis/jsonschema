@@ -199,28 +199,28 @@ object Schema {
 }
 
 object structure {
-  case class SInt(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
-  case class SNum(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
-  case object SBool extends Schema[Boolean]
-  case class Str(format: Option[String] = None) extends Schema[String]
-  case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None) extends Schema[List[A]]
-  case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
-  case class Isos[A](value: XMap[A]) extends Schema[A]
-  case class Defer[A](value: () => Schema[A]) extends Schema[A]
-  case class Enumeration(allowed: List[String]) extends Schema[String]
-  case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
-  case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
+  final case class SInt(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
+  final case class SNum(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
+  final case object SBool extends Schema[Boolean]
+  final case class Str(format: Option[String] = None) extends Schema[String]
+  final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None) extends Schema[List[A]]
+  final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
+  final case class Isos[A](value: XMap[A]) extends Schema[A]
+  final case class Defer[A](value: () => Schema[A]) extends Schema[A]
+  final case class Enumeration(allowed: List[String]) extends Schema[String]
+  final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
+  final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
 
   trait Field[R, E]
   object Field {
-    case class Required[R, E](
+    final case class Required[R, E](
         name: String,
         elemSchema: Schema[E],
         get: R => E
     ) extends Field[R, E]
 
-    case class Optional[R, E](
+    final case class Optional[R, E](
         name: String,
         elemSchema: Schema[E],
         get: R => Option[E]

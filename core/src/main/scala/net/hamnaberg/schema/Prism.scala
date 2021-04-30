@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 @implicitNotFound(
   "Cannot find an implicit Prism[${A}, ${B}]. Write an instance manually, or check whether ${B} is a subtype of ${A} if you want the library to provide one for you automatically."
 )
-case class Prism[A, B](tryGet: A => Option[B], inject: B => A)
+final case class Prism[A, B](tryGet: A => Option[B], inject: B => A)
 object Prism extends LowPrioPrism {
 
   /** Returns a new [[Prism]] instance using the specified
