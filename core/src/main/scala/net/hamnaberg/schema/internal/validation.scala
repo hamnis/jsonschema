@@ -34,16 +34,16 @@ object validation {
         val bigint = {
           if (json.isNumber) {
             val num = json.asNumber
-            num.flatMap(_.toLong).as(json).toValidNel(error)
+            num.flatMap(_.toBigInt).as(json).toValidNel(error)
           } else {
             error.invalidNel
           }
         }
         left.orElse(right).orElse(bigint).as(json)
       case structure.SNum(_) =>
-        val error = ValidationError("Not a valid long", history)
+        val error = ValidationError("Not a valid numeric", history)
         if (json.isNumber) {
-          json.validNel
+          json.asNumber.flatMap(_.toBigDecimal).filterNot(_.isWhole).as(json).toValidNel(error)
         } else {
           error.invalidNel
         }

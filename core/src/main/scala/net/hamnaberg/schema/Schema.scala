@@ -172,9 +172,9 @@ object Schema {
 
   def _dateFormat[A <: TemporalAccessor](
       formatter: DateTimeFormatter,
-      format: String,
+      typ: String,
       f: (String, DateTimeFormatter) => A) =
-    Str(Some(format)).xmap(s =>
+    Str(Some(typ)).xmap(s =>
       Try(f(s, formatter)).toEither.leftMap(m =>
         DecodingFailure(Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"), Nil)))(b =>
       formatter.format(b))
