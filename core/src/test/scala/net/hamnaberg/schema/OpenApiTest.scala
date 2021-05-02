@@ -25,8 +25,6 @@ class OpenApiTest extends FunSuite {
     val components = Components()
       .addSchema[Person]("person")
     val peopleWrapper = Schema[Person].asList(components.referenceToSchema("person")).wrapper(None, "people")
-    println(peopleWrapper.compiled)
-    //.addSchema("people")(peopleWrapper)
 
     val api = OpenAPI(
       info = Info("Person api", "0.1"),
@@ -37,8 +35,18 @@ class OpenApiTest extends FunSuite {
       security = Nil)
 
     val modified = api
-      .addPathItem("/people/{id}", PathItem.empty.withGet[Person](components, "person"))
-      .addPathItem("/people", PathItem.empty.withGet(components, "people")(peopleWrapper))
-    println(modified.asJson.spaces2)
+      .addPathItem(
+        "/people/{id}",
+        PathItem.empty.withGet(components.referenceToSchema("person").toLeft(Schema[Person].compiled)))
+      .addPathItem(
+        "/people",
+        PathItem.empty
+          .withGet(components.referenceToSchema("person").toLeft(peopleWrapper.compiled))
+          .withPost(components.referenceToSchema("person").toLeft(Schema[Person].compiled), _.responseStatus(204, None))
+      )
+    assertEquals(modified.paths.size, 2)
+    assert(modified.paths.head._2.get.isDefined)
+    assert(modified.paths.tail.head._2.get.isDefined)
+    assert(modified.paths.tail.head._2.post.isDefined)
   }
 }

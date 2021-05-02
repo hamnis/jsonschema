@@ -37,19 +37,28 @@ object syntax {
       op.copy(requestBody =
         Some(Right(RequestBody(None, ListMap(contentType -> MediaType(referenceOr)), required = None))))
 
-    def response(referenceOr: ReferenceOr[TapirSchema], contentType: String = "application/json"): Operation.Type =
+    def response(
+        referenceOr: Option[ReferenceOr[TapirSchema]],
+        contentType: String = "application/json"): Operation.Type =
       op.copy(responses = op.responses.updated(
         ResponsesDefaultKey,
-        Right(Response("", ListMap.empty, ListMap(contentType -> MediaType(referenceOr))))
-      ))
+        Right(
+          Response(
+            "",
+            ListMap.empty,
+            referenceOr.map(ref => ListMap(contentType -> MediaType(ref))).getOrElse(ListMap.empty)))))
 
     def responseStatus(
         status: Int,
-        referenceOr: ReferenceOr[TapirSchema],
+        referenceOr: Option[ReferenceOr[TapirSchema]],
         contentType: String = "application/json"): Operation.Type =
       op.copy(responses = op.responses.updated(
         ResponsesCodeKey(status),
-        Right(Response("", ListMap.empty, ListMap(contentType -> MediaType(referenceOr))))
+        Right(
+          Response(
+            "",
+            ListMap.empty,
+            referenceOr.map(ref => ListMap(contentType -> MediaType(ref))).getOrElse(ListMap.empty)))
       ))
   }
 
@@ -57,22 +66,16 @@ object syntax {
     def withSummary(summary: String): PathItem.Type = item.copy(summary = Some(summary))
     def withDescription(description: String): PathItem.Type = item.copy(description = Some(description))
 
-    def withGet[O](components: Components, schemaName: String)(implicit schema: Schema[O]): PathItem.Type =
-      item.copy(get = Some(Operation.empty.response(components.referenceToSchema(schemaName).toLeft(schema.compiled))))
-    def withPost[I, O](components: Components, schemaName: String)(implicit
-        schemaIn: Schema[I],
-        schemaOut: Schema[O]): PathItem.Type =
-      item.copy(post = Some(
-        Operation.empty
-          .request(Right(schemaIn.compiled))
-          .response(components.referenceToSchema(schemaName).toLeft(schemaOut.compiled))))
-    def withPut[I, O](components: Components, schemaName: String)(implicit
-        schemaIn: Schema[I],
-        schemaOut: Schema[O]): PathItem.Type =
-      item.copy(put = Some(
-        Operation.empty
-          .request(Right(schemaIn.compiled))
-          .response(components.referenceToSchema(schemaName).toLeft(schemaOut.compiled))))
+    def withGet(schema: ReferenceOr[TapirSchema]): PathItem.Type =
+      item.copy(get = Some(Operation.empty.response(Some(schema))))
+    def withPost(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): PathItem.Type =
+      item.copy(post = Some(Operation.empty.request(inSchema).response(outSchema)))
+    def withPost(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): PathItem.Type =
+      item.copy(post = Some(f(Operation.empty.request(inSchema))))
+    def withPut(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): PathItem.Type =
+      item.copy(put = Some(Operation.empty.request(inSchema).response(outSchema)))
+    def withPut(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): PathItem.Type =
+      item.copy(put = Some(f(Operation.empty.request(inSchema))))
     def withDelete: PathItem.Type = item.copy(delete = Some(Operation.empty))
     def withHead: PathItem.Type = item.copy(head = Some(Operation.empty))
   }
