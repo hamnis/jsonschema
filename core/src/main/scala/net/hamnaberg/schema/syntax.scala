@@ -30,7 +30,7 @@ object syntax {
     val empty: Type = TapirOperation(Nil, None, None, "", Nil, None, ListMap.empty, None, Nil, Nil)
   }
 
-  implicit class OperationOps(op: Operation.Type) {
+  implicit class OperationOps(val op: Operation.Type) extends AnyVal {
     def withId(id: String): Operation.Type = op.copy(operationId = id)
 
     def request(referenceOr: ReferenceOr[TapirSchema], contentType: String = "application/json"): Operation.Type =
@@ -62,7 +62,7 @@ object syntax {
       ))
   }
 
-  implicit class PathItemOps(item: PathItem.Type) {
+  implicit class PathItemOps(val item: PathItem.Type)  extends AnyVal {
     def withSummary(summary: String): PathItem.Type = item.copy(summary = Some(summary))
     def withDescription(description: String): PathItem.Type = item.copy(description = Some(description))
 
