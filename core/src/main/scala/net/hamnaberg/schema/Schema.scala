@@ -45,7 +45,7 @@ sealed trait Schema[A] { self =>
 
   def reference(ref: Reference): Schema[A] = Custom(Left(ref), encoder, decoder)
 
-  def wrapper(ref: Option[Reference], field: String): Schema[A] =
+  def at(field: String, ref: Option[Reference] = None): Schema[A] =
     Schema.record[A](_(field, identity)(ref.map(this.reference).getOrElse(this)))
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
