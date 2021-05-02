@@ -5,7 +5,7 @@ import sttp.tapir.openapi.{Components => TapirComponents}
 
 import scala.collection.immutable.ListMap
 
-case class Components(underlying: TapirComponents = TapirComponents(ListMap.empty, ListMap.empty)) {
+final case class Components(underlying: TapirComponents = TapirComponents(ListMap.empty, ListMap.empty)) {
   def addSchema[A: Schema](name: String): Components =
     addSchemaAndReference(name)._2
 
@@ -18,4 +18,8 @@ case class Components(underlying: TapirComponents = TapirComponents(ListMap.empt
 
   private def getReference(name: String) =
     Reference(s"#/components/schemas/$name")
+}
+
+object Components {
+  val empty = Components()
 }
