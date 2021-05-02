@@ -7,8 +7,15 @@ import scala.collection.immutable.ListMap
 
 case class Components(underlying: TapirComponents = TapirComponents(ListMap.empty, ListMap.empty)) {
   def addSchema[A: Schema](name: String): Components =
-    Components(underlying.copy(schemas = underlying.schemas.updated(name, Right(Schema[A].compiled))))
+    addSchemaAndReference(name)._2
+
+  def addSchemaAndReference[A: Schema](name: String): (Reference, Components) =
+    getReference(name) -> Components(
+      underlying.copy(schemas = underlying.schemas.updated(name, Right(Schema[A].compiled))))
 
   def referenceToSchema(name: String): Option[Reference] =
-    underlying.schemas.get(name).map(_ => Reference(s"#/components/schemas/$name"))
+    underlying.schemas.get(name).map(_ => getReference(name))
+
+  private def getReference(name: String) =
+    Reference(s"#/components/schemas/$name")
 }

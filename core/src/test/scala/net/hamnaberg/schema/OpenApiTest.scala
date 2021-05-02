@@ -2,10 +2,7 @@ package net.hamnaberg.schema
 
 import cats.syntax.all._
 import munit.FunSuite
-import io.circe.syntax._
-import sttp.tapir.apispec.Reference
 import sttp.tapir.openapi.{Info, OpenAPI}
-import sttp.tapir.openapi.circe._
 import syntax._
 
 import scala.collection.immutable.ListMap
@@ -22,9 +19,9 @@ class OpenApiTest extends FunSuite {
   }
 
   test("People form") {
-    val components = Components()
-      .addSchema[Person]("person")
-    val peopleWrapper = Schema[Person].asList(components.referenceToSchema("person")).wrapper(None, "people")
+    val (personReference, components) = Components()
+      .addSchemaAndReference[Person]("person")
+    val peopleWrapper = Schema[Person].asList(Some(personReference)).wrapper(None, "people")
 
     val api = OpenAPI(
       info = Info("Person api", "0.1"),
@@ -35,14 +32,12 @@ class OpenApiTest extends FunSuite {
       security = Nil)
 
     val modified = api
-      .addPathItem(
-        "/people/{id}",
-        PathItem.empty.withGet(components.referenceToSchema("person").toLeft(Schema[Person].compiled)))
+      .addPathItem("/people/{id}", PathItem.empty.withGet(Left(personReference)))
       .addPathItem(
         "/people",
         PathItem.empty
-          .withGet(components.referenceToSchema("person").toLeft(peopleWrapper.compiled))
-          .withPost(components.referenceToSchema("person").toLeft(Schema[Person].compiled), _.responseStatus(204, None))
+          .withGet(Right(peopleWrapper.compiled))
+          .withPost(Left(personReference), _.responseStatus(204, None))
       )
     assertEquals(modified.paths.size, 2)
     assert(modified.paths.head._2.get.isDefined)
