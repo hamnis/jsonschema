@@ -62,7 +62,7 @@ object syntax {
       ))
   }
 
-  implicit class PathItemOps(val item: PathItem.Type)  extends AnyVal {
+  implicit class PathItemOps(val item: PathItem.Type) extends AnyVal {
     def withSummary(summary: String): PathItem.Type = item.copy(summary = Some(summary))
     def withDescription(description: String): PathItem.Type = item.copy(description = Some(description))
 
