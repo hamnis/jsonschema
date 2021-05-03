@@ -73,4 +73,11 @@ class PersonSchemaTest extends FunSuite {
       j => assert(validJson eq j)
     )
   }
+
+  test("wrapped list") {
+    implicit val enc: Encoder[Person] = Person.schema.encoder
+    val peopleSchema = Person.schema.asList().at("people")
+    val json = Json.obj("people" := List(Person("John Doe", 18), Person("Jane Doe", 19)))
+    peopleSchema.decode(json).fold(_ => fail("Invalid"), wrap => assertEquals(wrap.size, 2))
+  }
 }

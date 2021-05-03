@@ -72,7 +72,7 @@ object validation {
             _ => json.validNel
           )
 
-      case structure.Sequence(elementSchema, min, max) =>
+      case structure.Sequence(elementSchema, _, min, max) =>
         val error = ValidationError("Not a valid array", history)
         json.asArray match {
           case Some(array) =>

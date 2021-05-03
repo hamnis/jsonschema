@@ -25,11 +25,11 @@ object Tapir {
         TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), format = format)
       case Enumeration(allowed) =>
         TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), `enum` = Some(allowed))
-      case Sequence(value, min, max) =>
+      case Sequence(value, reference, min, max) =>
         TapirSchema(
           `type` = Some(SchemaType.Array),
           nullable = Some(false),
-          items = Some(Right(schemaFor(value))),
+          items = Some(reference.toLeft(schemaFor(value))),
           minItems = min,
           maxItems = max
         )

@@ -22,7 +22,7 @@ object encoding {
       Encoder.encodeString
     case Enumeration(_) =>
       Encoder.encodeString
-    case Sequence(value, _, _) =>
+    case Sequence(value, _, _, _) =>
       encodeList(value)
     case Record(rec) =>
       Encoder.instance(encodeObject(rec).andThen(_.asJson))

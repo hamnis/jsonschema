@@ -30,12 +30,23 @@ sealed trait Schema[A] { self =>
     .eval(this, json, Nil)
     .andThen(decode(_).fold(err => ValidationError(err.message, err.history).invalidNel, _.validNel))
 
-  def asList: Schema[List[A]] = Sequence(this)
-  def asVector: Schema[Vector[A]] = list(this).imap(_.toVector)(_.toList)
-  def asSeq: Schema[immutable.Seq[A]] =
-    list(this).imap(_.toSeq: immutable.Seq[A])(_.toList)
+  def asList(reference: Option[Reference] = None, min: Option[Int] = None, max: Option[Int] = None): Schema[List[A]] =
+    Sequence(this, reference, min, max)
+  def asVector(
+      reference: Option[Reference] = None,
+      min: Option[Int] = None,
+      max: Option[Int] = None): Schema[Vector[A]] =
+    asList(reference, min, max).imap(_.toVector)(_.toList)
+  def asSeq(
+      reference: Option[Reference] = None,
+      min: Option[Int] = None,
+      max: Option[Int] = None): Schema[immutable.Seq[A]] =
+    asList(reference, min, max).imap(_.toSeq: immutable.Seq[A])(_.toList)
 
-  def reference(ref: String): Schema[A] = Custom(Left(Reference(ref)), encoder, decoder)
+  def reference(ref: Reference): Schema[A] = Custom(Left(ref), encoder, decoder)
+
+  def at(field: String, ref: Option[Reference] = None): Schema[A] =
+    Schema.record[A](_(field, identity)(ref.map(this.reference).getOrElse(this)))
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
     Isos {
@@ -195,9 +206,9 @@ object Schema {
         DecodingFailure(Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"), Nil)))(b =>
       formatter.format(b))
 
-  implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector
-  implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList
-  implicit def seq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq
+  implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector()
+  implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList()
+  implicit def seq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq()
 }
 
 object structure {
@@ -205,7 +216,11 @@ object structure {
   final case class SNum(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
   final case object SBool extends Schema[Boolean]
   final case class Str(format: Option[String] = None) extends Schema[String]
-  final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
+  final case class Sequence[A](
+      value: Schema[A],
+      reference: Option[Reference] = None,
+      min: Option[Int] = None,
+      max: Option[Int] = None)
       extends Schema[List[A]]
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   final case class Isos[A](value: XMap[A]) extends Schema[A]

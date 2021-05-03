@@ -23,7 +23,7 @@ object decoding {
         Decoder.decodeString
       case Enumeration(allowed) =>
         Decoder.decodeString.ensure(e => if (allowed.contains(e)) Nil else List(s"$e, not in $allowed"))
-      case Sequence(value, _, _) =>
+      case Sequence(value, _, _, _) =>
         decodeList(value)
       case Record(record) =>
         decodeRecord(record)
