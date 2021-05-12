@@ -70,7 +70,7 @@ class PersonSchemaTest extends FunSuite {
 
     validResult.fold(
       r => fail(s"expected valid $r"),
-      j => assert(validJson eq j)
+      j => assertEquals(validJson, j)
     )
   }
 
@@ -79,5 +79,30 @@ class PersonSchemaTest extends FunSuite {
     val peopleSchema = Person.schema.asList().at("people")
     val json = Json.obj("people" := List(Person("John Doe", 18), Person("Jane Doe", 19)))
     peopleSchema.decode(json).fold(_ => fail("Invalid"), wrap => assertEquals(wrap.size, 2))
+  }
+
+  test("default value") {
+    val personSchema = Schema
+      .record[Person] { field =>
+        (
+          field[String]("name", _.name),
+          field[Int]("age", _.age)(Schema.int.withDefault(0))
+        ).mapN(Person.apply)
+      }
+
+    val people = List(personSchema.encode(Person("John Doe", 18)), personSchema.encode(Person("Jane Doe", 19)))
+
+    val named = Json.obj("name" := "With Only Name")
+
+    people.foreach { json =>
+      assert(personSchema.validate(json).isValid)
+    }
+
+    personSchema
+      .validateDecode(named)
+      .fold(
+        err => fail(s"Expected valid, failed with $err"),
+        p => assertEquals(p, Person("With Only Name", 0))
+      )
   }
 }

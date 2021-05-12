@@ -4,7 +4,7 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.tapir.apispec.{Reference, Schema => TapirSchema, SchemaType}
+import sttp.tapir.apispec.{ExampleSingleValue, Reference, SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 
@@ -39,6 +39,7 @@ object Tapir {
       case Custom(schema, _, _) => TapirSchema(allOf = List(schema))
       case Sum(alts) =>
         TapirSchema(oneOf = alts.map(c => Right(schemaFor(c.caseSchema))).toList)
+      case DefaultValue(schema, default) => schemaFor(schema).copy(default = Some(ExampleSingleValue(default.noSpaces)))
     }
 
   def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): TapirSchema = {

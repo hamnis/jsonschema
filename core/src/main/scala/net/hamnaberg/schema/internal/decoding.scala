@@ -5,8 +5,7 @@ import cats._
 import cats.data.{Chain, Kleisli}
 import cats.free.FreeApplicative
 import cats.syntax.all._
-
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, DecodingFailure, HCursor}
 
 object decoding {
   import structure._
@@ -34,6 +33,10 @@ object decoding {
       case Defer(f) => fromSchema(f())
       case Custom(_, _, decoder) => decoder
       case Sum(alts) => decodeSum(alts)
+      case DefaultValue(schema, value) =>
+        val decoder = fromSchema(schema)
+        decoder.or(Decoder.instance(c =>
+          decoder.decodeJson(value).leftMap(d => DecodingFailure(d.message, c.history ++ d.history))))
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =

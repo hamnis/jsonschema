@@ -30,6 +30,8 @@ sealed trait Schema[A] { self =>
     .eval(this, json, Nil)
     .andThen(decode(_).fold(err => ValidationError(err.message, err.history).invalidNel, _.validNel))
 
+  def withDefault(value: A) = DefaultValue(this, encode(value))
+
   def asList(reference: Option[Reference] = None, min: Option[Int] = None, max: Option[Int] = None): Schema[List[A]] =
     Sequence(this, reference, min, max)
   def asVector(
@@ -229,6 +231,7 @@ object structure {
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
+  final case class DefaultValue[A](schema: Schema[A], default: Json) extends Schema[A]
 
   trait Field[R, E]
   object Field {
