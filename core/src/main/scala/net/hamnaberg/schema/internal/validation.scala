@@ -140,10 +140,8 @@ object validation {
             val next = CursorOp.Field(name) :: history
             Const(json(name) match {
               case Some(value) => eval(elemSchema, value, next).map(_ => ())
-              case None if default.isDefined =>
-                ().validNel
-              case None =>
-                ValidationError("Not a valid object", next).invalidNel
+              case None if default.isDefined => ().validNel
+              case None => ValidationError("Not a valid object", next).invalidNel
             })
         }
       }
