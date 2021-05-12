@@ -127,13 +127,7 @@ object validation {
         eval(schema, value, history).orElse(json.validNel)
     }
 
-  def validateRecord[R](fields: FreeApplicative[Field[R, *], R], json: JsonObject, history: List[CursorOp]) = {
-    implicit val jsonObjectMonoid: Monoid[JsonObject] = new Monoid[JsonObject] {
-      override def empty: JsonObject = JsonObject.empty
-
-      override def combine(x: JsonObject, y: JsonObject): JsonObject = x.deepMerge(y)
-    }
-
+  def validateRecord[R](fields: FreeApplicative[Field[R, *], R], json: JsonObject, history: List[CursorOp]) =
     fields.foldMap {
       new (Field[R, *] ~> Const[ValidatedNel[ValidationError, JsonObject], *]) {
         override def apply[A](fa: Field[R, A]): Const[ValidatedNel[ValidationError, JsonObject], A] = fa match {
@@ -157,6 +151,10 @@ object validation {
         }
       }
     }.getConst
+
+  private implicit val jsonObjectMonoid: Monoid[JsonObject] = new Monoid[JsonObject] {
+    override def empty: JsonObject = JsonObject.empty
+    override def combine(x: JsonObject, y: JsonObject): JsonObject = x.deepMerge(y)
   }
 
 }
