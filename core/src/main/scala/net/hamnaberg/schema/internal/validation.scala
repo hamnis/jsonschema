@@ -4,6 +4,7 @@ import cats._
 import cats.data._
 import cats.free.FreeApplicative
 import cats.syntax.all._
+import io.circe.syntax.EncoderOps
 import io.circe.{CursorOp, Json, JsonObject}
 import net.hamnaberg.schema.structure.Field
 import net.hamnaberg.schema.{Schema, ValidBounds, ValidationError, structure}
@@ -135,12 +136,13 @@ object validation {
               case Some(value) => eval(elemSchema, value, next).map(_ => ())
               case None => ().validNel
             })
-          case Field.Required(name, elemSchema, _) =>
+          case Field.Required(name, elemSchema, default, _) =>
             val next = CursorOp.Field(name) :: history
-            json(name) match {
-              case Some(value) => Const(eval(elemSchema, value, next).map(_ => ()))
-              case None => Const(ValidationError("Not a valid object", next).invalidNel)
-            }
+            Const(json(name) match {
+              case Some(value) => eval(elemSchema, value, next).map(_ => ())
+              case None if default.isDefined => ().validNel
+              case None => ValidationError("Not a valid object", next).invalidNel
+            })
         }
       }
     }.getConst

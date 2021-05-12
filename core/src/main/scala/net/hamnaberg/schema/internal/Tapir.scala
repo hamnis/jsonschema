@@ -4,7 +4,7 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.tapir.apispec.{Reference, Schema => TapirSchema, SchemaType}
+import sttp.tapir.apispec.{ExampleSingleValue, Reference, SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 
@@ -51,8 +51,9 @@ object Tapir {
             field match {
               case Field.Optional(name, elemSchema, _) =>
                 Const(List(name -> schemaFor(elemSchema).copy(nullable = Some(true))))
-              case Field.Required(name, elemSchema, _) =>
-                Const(List(name -> schemaFor(elemSchema)))
+              case Field.Required(name, elemSchema, default, _) =>
+                Const(List(name -> schemaFor(elemSchema).copy(default = default.map(e =>
+                  ExampleSingleValue(encoding.fromSchema(elemSchema).apply(e).noSpaces)))))
             }
         })
         .getConst

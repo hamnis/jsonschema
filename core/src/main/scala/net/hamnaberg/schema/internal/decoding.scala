@@ -5,8 +5,7 @@ import cats._
 import cats.data.{Chain, Kleisli}
 import cats.free.FreeApplicative
 import cats.syntax.all._
-
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, DecodingFailure, HCursor}
 
 object decoding {
   import structure._
@@ -50,9 +49,13 @@ object decoding {
               val from = fromSchema[A](elemSchema.asInstanceOf[Schema[A]])
               c.get[Option[A]](name)(Decoder.decodeOption(from))
             }
-          case Field.Required(name, elemSchema, _) =>
+          case Field.Required(name, elemSchema, default, _) =>
             Kleisli { c =>
-              c.downField(name).as(fromSchema[A](elemSchema))
+              val down = c.downField(name)
+              default match {
+                case Some(value) if down.failed => Right(value)
+                case _ => down.as(fromSchema[A](elemSchema))
+              }
             }
         }
       }

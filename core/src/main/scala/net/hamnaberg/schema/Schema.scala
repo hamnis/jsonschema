@@ -120,9 +120,10 @@ object Schema {
   class FieldBuilder[R] {
     def apply[E](
         name: String,
-        get: R => E
+        get: R => E,
+        default: Option[E] = None
     )(implicit elemSchema: Schema[E]): FreeApplicative[Field[R, *], E] =
-      FreeApplicative.lift(Field.Required(name, elemSchema, get))
+      FreeApplicative.lift(Field.Required(name, elemSchema, default, get))
 
     def pure[A](a: A): FreeApplicative[Field[R, *], A] = FreeApplicative.pure(a)
 
@@ -235,6 +236,7 @@ object structure {
     final case class Required[R, E](
         name: String,
         elemSchema: Schema[E],
+        default: Option[E],
         get: R => E
     ) extends Field[R, E]
 

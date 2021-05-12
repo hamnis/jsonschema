@@ -53,7 +53,7 @@ object encoding {
                   elem.foldMap(write(name, elemSchema, _))
                 }
 
-              case Field.Required(name, elemSchema, get) =>
+              case Field.Required(name, elemSchema, _, get) =>
                 (r: R) => {
                   val elem = get(r)
                   write(name, elemSchema, elem)

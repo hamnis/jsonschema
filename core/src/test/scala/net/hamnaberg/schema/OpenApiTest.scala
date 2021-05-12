@@ -18,7 +18,7 @@ class OpenApiTest extends FunSuite {
     }
   }
 
-  test("People form") {
+  test("People full openapi") {
     val (personReference, components) = Components()
       .addSchemaAndReference[Person]("person")
     val peopleWrapper = Schema[Person].asList(Some(personReference)).at("people")
