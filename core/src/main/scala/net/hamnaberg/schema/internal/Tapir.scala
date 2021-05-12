@@ -39,7 +39,6 @@ object Tapir {
       case Custom(schema, _, _) => TapirSchema(allOf = List(schema))
       case Sum(alts) =>
         TapirSchema(oneOf = alts.map(c => Right(schemaFor(c.caseSchema))).toList)
-      case DefaultValue(schema, default) => schemaFor(schema).copy(default = Some(ExampleSingleValue(default.noSpaces)))
     }
 
   def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): TapirSchema = {
@@ -52,8 +51,9 @@ object Tapir {
             field match {
               case Field.Optional(name, elemSchema, _) =>
                 Const(List(name -> schemaFor(elemSchema).copy(nullable = Some(true))))
-              case Field.Required(name, elemSchema, _) =>
-                Const(List(name -> schemaFor(elemSchema)))
+              case Field.Required(name, elemSchema, default, _) =>
+                Const(List(name -> schemaFor(elemSchema).copy(default = default.map(e =>
+                  ExampleSingleValue(encoding.fromSchema(elemSchema).apply(e).noSpaces)))))
             }
         })
         .getConst

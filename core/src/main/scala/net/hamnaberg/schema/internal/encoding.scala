@@ -31,7 +31,6 @@ object encoding {
     case Defer(f) => fromSchema(f())
     case Custom(_, encoder, _) => encoder
     case Sum(alts) => encodeAlternatives(alts)
-    case DefaultValue(s, _) => fromSchema(s)
   }
 
   def encodeList[A](schema: Schema[A]): Encoder[List[A]] =
@@ -54,7 +53,7 @@ object encoding {
                   elem.foldMap(write(name, elemSchema, _))
                 }
 
-              case Field.Required(name, elemSchema, get) =>
+              case Field.Required(name, elemSchema, _, get) =>
                 (r: R) => {
                   val elem = get(r)
                   write(name, elemSchema, elem)

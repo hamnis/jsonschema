@@ -33,10 +33,6 @@ object decoding {
       case Defer(f) => fromSchema(f())
       case Custom(_, _, decoder) => decoder
       case Sum(alts) => decodeSum(alts)
-      case DefaultValue(schema, value) =>
-        val decoder = fromSchema(schema)
-        decoder.or(Decoder.instance(c =>
-          decoder.decodeJson(value).leftMap(d => DecodingFailure(d.message, c.history ++ d.history))))
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =
@@ -53,9 +49,13 @@ object decoding {
               val from = fromSchema[A](elemSchema.asInstanceOf[Schema[A]])
               c.get[Option[A]](name)(Decoder.decodeOption(from))
             }
-          case Field.Required(name, elemSchema, _) =>
+          case Field.Required(name, elemSchema, default, _) =>
             Kleisli { c =>
-              c.downField(name).as(fromSchema[A](elemSchema))
+              val down = c.downField(name)
+              default match {
+                case Some(value) if down.failed => Right(value)
+                case _ => down.as(fromSchema[A](elemSchema))
+              }
             }
         }
       }

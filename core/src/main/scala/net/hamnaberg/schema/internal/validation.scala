@@ -93,7 +93,7 @@ object validation {
         val error = ValidationError("Not a valid object", history)
         json.asObject match {
           case Some(obj) =>
-            validateRecord(fields, obj, history).map(_.asJson)
+            validateRecord(fields, obj, history).map(_ => json)
           case None => error.invalidNel
         }
 
@@ -123,38 +123,30 @@ object validation {
             nel => nel.map(d => ValidationError(d.message, history ++ d.history)).invalid,
             _ => json.validNel
           )
-      case structure.DefaultValue(schema, value) =>
-        eval(schema, value, history).orElse(json.validNel)
     }
 
   def validateRecord[R](fields: FreeApplicative[Field[R, *], R], json: JsonObject, history: List[CursorOp]) =
     fields.foldMap {
-      new (Field[R, *] ~> Const[ValidatedNel[ValidationError, JsonObject], *]) {
-        override def apply[A](fa: Field[R, A]): Const[ValidatedNel[ValidationError, JsonObject], A] = fa match {
+      new (Field[R, *] ~> Const[ValidatedNel[ValidationError, Unit], *]) {
+        override def apply[A](fa: Field[R, A]): Const[ValidatedNel[ValidationError, Unit], A] = fa match {
           case Field.Optional(name, elemSchema, _) =>
             val next = CursorOp.Field(name) :: history
             Const(json(name) match {
-              case Some(Json.Null) => json.validNel
-              case Some(value) => eval(elemSchema, value, next).map(_ => json)
-              case None => json.validNel
+              case Some(Json.Null) => ().validNel
+              case Some(value) => eval(elemSchema, value, next).map(_ => ())
+              case None => ().validNel
             })
-          case Field.Required(name, elemSchema, _) =>
+          case Field.Required(name, elemSchema, default, _) =>
             val next = CursorOp.Field(name) :: history
             Const(json(name) match {
-              case Some(value) => eval(elemSchema, value, next).map(_ => json)
+              case Some(value) => eval(elemSchema, value, next).map(_ => ())
+              case None if default.isDefined =>
+                ().validNel
               case None =>
-                elemSchema match {
-                  case structure.DefaultValue(d, value) => eval(d, value, next).map(_ => json.add(name, value))
-                  case _ => ValidationError("Not a valid object", next).invalidNel
-                }
+                ValidationError("Not a valid object", next).invalidNel
             })
         }
       }
     }.getConst
-
-  private implicit val jsonObjectMonoid: Monoid[JsonObject] = new Monoid[JsonObject] {
-    override def empty: JsonObject = JsonObject.empty
-    override def combine(x: JsonObject, y: JsonObject): JsonObject = x.deepMerge(y)
-  }
 
 }

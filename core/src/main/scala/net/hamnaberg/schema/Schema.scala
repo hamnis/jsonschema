@@ -30,8 +30,6 @@ sealed trait Schema[A] { self =>
     .eval(this, json, Nil)
     .andThen(decode(_).fold(err => ValidationError(err.message, err.history).invalidNel, _.validNel))
 
-  def withDefault(value: A) = DefaultValue(this, encode(value))
-
   def asList(reference: Option[Reference] = None, min: Option[Int] = None, max: Option[Int] = None): Schema[List[A]] =
     Sequence(this, reference, min, max)
   def asVector(
@@ -122,9 +120,10 @@ object Schema {
   class FieldBuilder[R] {
     def apply[E](
         name: String,
-        get: R => E
+        get: R => E,
+        default: Option[E] = None
     )(implicit elemSchema: Schema[E]): FreeApplicative[Field[R, *], E] =
-      FreeApplicative.lift(Field.Required(name, elemSchema, get))
+      FreeApplicative.lift(Field.Required(name, elemSchema, default, get))
 
     def pure[A](a: A): FreeApplicative[Field[R, *], A] = FreeApplicative.pure(a)
 
@@ -231,13 +230,13 @@ object structure {
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
-  final case class DefaultValue[A](schema: Schema[A], default: Json) extends Schema[A]
 
   trait Field[R, E]
   object Field {
     final case class Required[R, E](
         name: String,
         elemSchema: Schema[E],
+        default: Option[E],
         get: R => E
     ) extends Field[R, E]
 

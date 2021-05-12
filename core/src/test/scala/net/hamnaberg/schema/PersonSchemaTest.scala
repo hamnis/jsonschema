@@ -86,7 +86,7 @@ class PersonSchemaTest extends FunSuite {
       .record[Person] { field =>
         (
           field[String]("name", _.name),
-          field[Int]("age", _.age)(Schema.int.withDefault(0))
+          field[Int]("age", _.age, Some(0))
         ).mapN(Person.apply)
       }
 
