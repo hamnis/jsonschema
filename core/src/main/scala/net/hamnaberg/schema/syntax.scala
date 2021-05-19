@@ -40,13 +40,13 @@ object syntax {
   implicit class PathItemOps(val item: TapirPathItem) extends AnyVal {
 
     def withGet(schema: ReferenceOr[TapirSchema]): TapirPathItem =
-      item.get(TapirOperation.Empty.response(Some(schema)))
+      item.get(TapirOperation.Empty.responseStatus(200, Some(schema)))
     def withPost(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): TapirPathItem =
-      item.post(TapirOperation.Empty.request(inSchema).response(outSchema))
+      item.post(TapirOperation.Empty.request(inSchema).responseStatus(200, outSchema))
     def withPost(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): TapirPathItem =
       item.post(f(TapirOperation.Empty.request(inSchema)))
     def withPut(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): TapirPathItem =
-      item.put(TapirOperation.Empty.request(inSchema).response(outSchema))
+      item.put(TapirOperation.Empty.request(inSchema).responseStatus(200, outSchema))
     def withPut(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): TapirPathItem =
       item.put(f(TapirOperation.Empty.request(inSchema)))
   }
