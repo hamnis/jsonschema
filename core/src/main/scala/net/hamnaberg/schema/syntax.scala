@@ -1,10 +1,10 @@
 package net.hamnaberg.schema
 
-import sttp.tapir.apispec.{ReferenceOr, Schema => TapirSchema}
+import sttp.tapir.apispec.{Reference, ReferenceOr, Schema => TapirSchema}
 import sttp.tapir.openapi.{
-  Components => _,
-  Operation => TapirOperation,
+  Components => TapirComponents,
   MediaType => TapirMediaType,
+  Operation => TapirOperation,
   PathItem => TapirPathItem,
   _
 }
@@ -12,71 +12,42 @@ import sttp.tapir.openapi.{
 import scala.collection.immutable.ListMap
 
 object syntax {
-  object PathItem {
-    type Type = TapirPathItem
-    val empty: Type = TapirPathItem(None, None, None, None, None, None, None, None, None, None, Nil, Nil)
+  implicit class ComponentsOps(val op: TapirComponents) extends AnyVal {
+    def addSchemaAndReference[A: Schema](name: String): (Reference, TapirComponents) =
+      getSchemaReference(name) -> op.addSchema(name, Schema[A].compiled)
+
+    private def getSchemaReference(name: String) =
+      Reference(s"#/components/schemas/$name")
   }
 
-  object MediaType {
-    type Type = TapirMediaType
-    def apply(referenceOr: ReferenceOr[TapirSchema]): Type =
-      TapirMediaType(schema = Some(referenceOr), example = None, examples = ListMap.empty, encoding = ListMap.empty)
-    def apply(): Type =
-      TapirMediaType(schema = None, example = None, examples = ListMap.empty, encoding = ListMap.empty)
-  }
-
-  object Operation {
-    type Type = TapirOperation
-    val empty: Type = TapirOperation(Nil, None, None, "", Nil, None, ListMap.empty, None, Nil, Nil)
-  }
-
-  implicit class OperationOps(val op: Operation.Type) extends AnyVal {
-    def withId(id: String): Operation.Type = op.copy(operationId = id)
-
-    def request(referenceOr: ReferenceOr[TapirSchema], contentType: String = "application/json"): Operation.Type =
-      op.copy(requestBody =
-        Some(Right(RequestBody(None, ListMap(contentType -> MediaType(referenceOr)), required = None))))
+  implicit class OperationOps(val op: TapirOperation) extends AnyVal {
+    def request(referenceOr: ReferenceOr[TapirSchema], contentType: String = "application/json"): TapirOperation =
+      op.copy(requestBody = Some(
+        Right(RequestBody(None, ListMap(contentType -> TapirMediaType(schema = Some(referenceOr))), required = None))))
 
     def response(
         referenceOr: Option[ReferenceOr[TapirSchema]],
-        contentType: String = "application/json"): Operation.Type =
-      op.copy(responses = op.responses.updated(
-        ResponsesDefaultKey,
-        Right(
-          Response(
-            "",
-            ListMap.empty,
-            referenceOr.map(ref => ListMap(contentType -> MediaType(ref))).getOrElse(ListMap.empty)))))
+        contentType: String = "application/json"): TapirOperation =
+      op.addDefaultResponse(Response.Empty.addMediaType(contentType, TapirMediaType(schema = referenceOr)))
 
     def responseStatus(
         status: Int,
         referenceOr: Option[ReferenceOr[TapirSchema]],
-        contentType: String = "application/json"): Operation.Type =
-      op.copy(responses = op.responses.updated(
-        ResponsesCodeKey(status),
-        Right(
-          Response(
-            "",
-            ListMap.empty,
-            referenceOr.map(ref => ListMap(contentType -> MediaType(ref))).getOrElse(ListMap.empty)))
-      ))
+        contentType: String = "application/json"): TapirOperation =
+      op.addResponse(status, Response("", ListMap.empty, ListMap(contentType -> TapirMediaType(schema = referenceOr))))
   }
 
-  implicit class PathItemOps(val item: PathItem.Type) extends AnyVal {
-    def withSummary(summary: String): PathItem.Type = item.copy(summary = Some(summary))
-    def withDescription(description: String): PathItem.Type = item.copy(description = Some(description))
+  implicit class PathItemOps(val item: TapirPathItem) extends AnyVal {
 
-    def withGet(schema: ReferenceOr[TapirSchema]): PathItem.Type =
-      item.copy(get = Some(Operation.empty.response(Some(schema))))
-    def withPost(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): PathItem.Type =
-      item.copy(post = Some(Operation.empty.request(inSchema).response(outSchema)))
-    def withPost(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): PathItem.Type =
-      item.copy(post = Some(f(Operation.empty.request(inSchema))))
-    def withPut(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): PathItem.Type =
-      item.copy(put = Some(Operation.empty.request(inSchema).response(outSchema)))
-    def withPut(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): PathItem.Type =
-      item.copy(put = Some(f(Operation.empty.request(inSchema))))
-    def withDelete: PathItem.Type = item.copy(delete = Some(Operation.empty))
-    def withHead: PathItem.Type = item.copy(head = Some(Operation.empty))
+    def withGet(schema: ReferenceOr[TapirSchema]): TapirPathItem =
+      item.get(TapirOperation.Empty.response(Some(schema)))
+    def withPost(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): TapirPathItem =
+      item.post(TapirOperation.Empty.request(inSchema).response(outSchema))
+    def withPost(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): TapirPathItem =
+      item.post(f(TapirOperation.Empty.request(inSchema)))
+    def withPut(inSchema: ReferenceOr[TapirSchema], outSchema: Option[ReferenceOr[TapirSchema]]): TapirPathItem =
+      item.put(TapirOperation.Empty.request(inSchema).response(outSchema))
+    def withPut(inSchema: ReferenceOr[TapirSchema], f: TapirOperation => TapirOperation): TapirPathItem =
+      item.put(f(TapirOperation.Empty.request(inSchema)))
   }
 }
