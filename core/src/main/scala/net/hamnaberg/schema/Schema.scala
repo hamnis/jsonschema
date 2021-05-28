@@ -92,15 +92,13 @@ object Schema {
     SInt(Some("int64"), Bounds(min, max)).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
   def boundedDouble(min: Option[Bound], max: Option[Bound]): Schema[Double] =
-    SNum(Some("double"), Bounds(min, max)).xmap(_.toDouble.asRight)(i =>
-      JsonNumber.fromDecimalStringUnsafe(i.toString))
+    SNum(Some("double"), Bounds(min, max)).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
   def boundedBigInt(min: Option[Bound], max: Option[Bound]): Schema[BigInt] =
     SInt(None, Bounds(min, max)).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
 
   def boundedFloat(min: Option[Bound], max: Option[Bound]): Schema[Float] =
-    SNum(Some("float"), Bounds(min, max)).xmap(_.toFloat.asRight)(i =>
-      JsonNumber.fromDecimalStringUnsafe(i.toString))
+    SNum(Some("float"), Bounds(min, max)).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
 
   def fields[R](p: FreeApplicative[Field[R, *], R]): Schema[R] = Record(p)
   def record[R](

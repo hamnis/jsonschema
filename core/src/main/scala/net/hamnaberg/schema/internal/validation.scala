@@ -7,7 +7,7 @@ import cats.syntax.all._
 import io.circe.syntax.EncoderOps
 import io.circe.{CursorOp, Json, JsonObject}
 import net.hamnaberg.schema.structure.Field
-import net.hamnaberg.schema.{Schema, Bounds, ValidationError, structure}
+import net.hamnaberg.schema.{Bounds, Schema, ValidationError, structure}
 
 object validation {
   def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): ValidatedNel[ValidationError, Json] =
