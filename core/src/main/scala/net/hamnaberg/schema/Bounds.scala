@@ -18,7 +18,18 @@ final case class Bounds(min: Option[Bound], max: Option[Bound]) {
 
 sealed trait Bound
 
+sealed trait BoundCompanion[A] {
+  def apply(value: BigDecimal): A
+  def fromInt(value: Int): A = apply(BigDecimal(value))
+  def fromLong(value: Long): A = apply(BigDecimal(value))
+  def fromBigInt(value: Long): A = apply(BigDecimal(value))
+  def fromDouble(value: Double): A = apply(BigDecimal(value.toString))
+  def fromFloat(value: Float): A = apply(BigDecimal(value.toString))
+}
+
 object Bound {
   final case class Inclusive(value: BigDecimal) extends Bound
+  object Inclusive extends BoundCompanion[Inclusive]
   final case class Exclusive(value: BigDecimal) extends Bound
+  object Exclusive extends BoundCompanion[Exclusive]
 }
