@@ -6,16 +6,25 @@ inThisBuild(
     addCompilerPlugin(("org.typelevel" % "kind-projector" % "0.13.0").cross(CrossVersion.full))
   ))
 
+val circeVersion = "0.13.0"
+
+val tapirVersion = "0.18.0-M11"
+
+val catsVersion = "2.6.1"
+
 lazy val core = project
   .settings(CommonSettings.settings)
   .settings(
     name := "openapi-schema-core",
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.tapir" %% "tapir-openapi-model" % "0.18.0-M11",
-      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe" % "0.18.0-M11",
-      "io.circe" %% "circe-core" % "0.13.0",
-      "org.typelevel" %% "cats-core" % "2.6.1",
-      "org.typelevel" %% "cats-free" % "2.6.1",
+      "com.softwaremill.sttp.tapir" %% "tapir-openapi-model" % tapirVersion,
+      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe" % tapirVersion,
+      "io.circe" %% "circe-core" % circeVersion,
+      "io.circe" %% "circe-generic" % circeVersion,
+      "io.circe" %% "circe-parser" % circeVersion,
+      "io.circe" %% "circe-jawn" % circeVersion,
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-free" % catsVersion,
       "org.scalameta" %% "munit" % "0.7.26" % Test
     )
   )
