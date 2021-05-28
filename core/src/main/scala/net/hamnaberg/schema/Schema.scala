@@ -85,18 +85,21 @@ object Schema {
 
   def apply[A](implicit S: Schema[A]) = S
 
-  def boundedInt(min: Bound, max: Bound): Schema[Int] =
-    SInt(Some("int32"), Some(ValidBounds(min, max))).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
+  def boundedInt(min: Option[Bound], max: Option[Bound]): Schema[Int] =
+    SInt(Some("int32"), Bounds(min, max)).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedLong(min: Bound, max: Bound): Schema[Long] =
-    SInt(Some("int64"), Some(ValidBounds(min, max))).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
+  def boundedLong(min: Option[Bound], max: Option[Bound]): Schema[Long] =
+    SInt(Some("int64"), Bounds(min, max)).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedDouble(min: Bound, max: Bound): Schema[Double] =
-    SNum(Some("double"), Some(ValidBounds(min, max))).xmap(_.toDouble.asRight)(i =>
+  def boundedDouble(min: Option[Bound], max: Option[Bound]): Schema[Double] =
+    SNum(Some("double"), Bounds(min, max)).xmap(_.toDouble.asRight)(i =>
       JsonNumber.fromDecimalStringUnsafe(i.toString))
+  def boundedBigInt(min: Option[Bound], max: Option[Bound]): Schema[BigInt] =
+    SInt(None, Bounds(min, max)).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
+      JsonNumber.fromIntegralStringUnsafe(i.toString))
 
-  def rangedFloat(min: Bound, max: Bound): Schema[Float] =
-    SNum(Some("float"), Some(ValidBounds(min, max))).xmap(_.toFloat.asRight)(i =>
+  def boundedFloat(min: Option[Bound], max: Option[Bound]): Schema[Float] =
+    SNum(Some("float"), Bounds(min, max)).xmap(_.toFloat.asRight)(i =>
       JsonNumber.fromDecimalStringUnsafe(i.toString))
 
   def fields[R](p: FreeApplicative[Field[R, *], R]): Schema[R] = Record(p)
@@ -159,19 +162,11 @@ object Schema {
       }
   }
 
-  implicit val int: Schema[Int] =
-    SInt(Some("int32"), None).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
-      JsonNumber.fromIntegralStringUnsafe(i.toString))
-  implicit val long: Schema[Long] =
-    SInt(Some("int64"), None).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
-      JsonNumber.fromIntegralStringUnsafe(i.toString))
-  implicit val bigInt: Schema[BigInt] =
-    SInt(None, None).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
-      JsonNumber.fromIntegralStringUnsafe(i.toString))
-  implicit val double: Schema[Double] =
-    SNum(Some("double"), None).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
-  implicit val float: Schema[Float] =
-    SNum(Some("float"), None).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
+  implicit val int: Schema[Int] = boundedInt(None, None)
+  implicit val long: Schema[Long] = boundedLong(None, None)
+  implicit val bigInt: Schema[BigInt] = boundedBigInt(None, None)
+  implicit val double: Schema[Double] = boundedDouble(None, None)
+  implicit val float: Schema[Float] = boundedFloat(None, None)
   implicit val string: Schema[String] = Str(None)
   implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
     Try(UUID.fromString(s)).toEither.leftMap(m =>
@@ -213,8 +208,8 @@ object Schema {
 }
 
 object structure {
-  final case class SInt(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
-  final case class SNum(format: Option[String], validRange: Option[ValidBounds]) extends Schema[JsonNumber]
+  final case class SInt(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
+  final case class SNum(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
   final case object SBool extends Schema[Boolean]
   final case class Str(format: Option[String] = None) extends Schema[String]
   final case class Sequence[A](

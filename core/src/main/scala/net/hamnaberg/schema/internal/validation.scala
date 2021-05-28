@@ -7,28 +7,28 @@ import cats.syntax.all._
 import io.circe.syntax.EncoderOps
 import io.circe.{CursorOp, Json, JsonObject}
 import net.hamnaberg.schema.structure.Field
-import net.hamnaberg.schema.{Schema, ValidBounds, ValidationError, structure}
+import net.hamnaberg.schema.{Schema, Bounds, ValidationError, structure}
 
 object validation {
   def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): ValidatedNel[ValidationError, Json] =
     schema match {
-      case structure.SInt(Some("int32"), range) =>
+      case structure.SInt(Some("int32"), bounds) =>
         val error = ValidationError("Not a valid int", history)
         if (json.isNumber) {
           val num = json.asNumber
-          num.flatMap(_.toInt).filter(value => range.forall(_.isWithin(BigDecimal(value)))).as(json).toValidNel(error)
+          num.flatMap(_.toInt).filter(value => bounds.isWithin(BigDecimal(value))).as(json).toValidNel(error)
         } else {
           error.invalidNel
         }
-      case structure.SInt(Some("int64"), range) =>
+      case structure.SInt(Some("int64"), bounds) =>
         val error = ValidationError("Not a valid long", history)
         if (json.isNumber) {
           val num = json.asNumber
-          num.flatMap(_.toLong).filter(value => range.forall(_.isWithin(BigDecimal(value)))).as(json).toValidNel(error)
+          num.flatMap(_.toLong).filter(value => bounds.isWithin(BigDecimal(value))).as(json).toValidNel(error)
         } else {
           error.invalidNel
         }
-      case structure.SInt(_, range) =>
+      case structure.SInt(_, bounds) =>
         val error = ValidationError("Not a valid integer", history)
         val left = eval(Schema.int, json, history)
         val right = eval(Schema.long, json, history)
@@ -37,7 +37,7 @@ object validation {
             val num = json.asNumber
             num
               .flatMap(_.toBigInt)
-              .filter(value => range.forall(_.isWithin(BigDecimal(value))))
+              .filter(value => bounds.isWithin(BigDecimal(value)))
               .as(json)
               .toValidNel(error)
           } else {
@@ -45,13 +45,13 @@ object validation {
           }
         }
         left.orElse(right).orElse(bigint).as(json)
-      case structure.SNum(_, range) =>
+      case structure.SNum(_, bounds) =>
         val error = ValidationError("Not a valid numeric", history)
         if (json.isNumber) {
           json.asNumber
             .flatMap(_.toBigDecimal)
             .filterNot(_.isWhole)
-            .filter(value => range.forall(_.isWithin(value)))
+            .filter(value => bounds.isWithin(value))
             .as(json)
             .toValidNel(error)
         } else {

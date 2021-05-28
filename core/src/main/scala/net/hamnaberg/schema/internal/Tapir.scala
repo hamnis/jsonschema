@@ -15,10 +15,10 @@ object Tapir {
     schema2 match {
       case SInt(format, bounds) =>
         val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
-        bounds.fold(baseSchema)(boundsSchema(baseSchema, _))
+        boundsSchema(baseSchema, bounds)
       case SNum(format, bounds) =>
         val baseSchema = TapirSchema(`type` = Some(SchemaType.Number), nullable = Some(false), format = format)
-        bounds.fold(baseSchema)(boundsSchema(baseSchema, _))
+        boundsSchema(baseSchema, bounds)
       case SBool =>
         TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
       case Str(format) =>
@@ -72,30 +72,20 @@ object Tapir {
     )
   }
 
-  private def boundsSchema(schema: TapirSchema, valid: ValidBounds) = valid match {
-    case ValidBounds(Bound.Inclusive(min), Bound.Inclusive(max)) =>
-      schema.copy(
-        minimum = Some(min),
-        exclusiveMinimum = Some(false),
-        maximum = Some(max),
-        exclusiveMaximum = Some(false))
-    case ValidBounds(Bound.Exclusive(min), Bound.Inclusive(max)) =>
-      schema.copy(
-        minimum = Some(min),
-        exclusiveMinimum = Some(true),
-        maximum = Some(max),
-        exclusiveMaximum = Some(false))
-    case ValidBounds(Bound.Inclusive(min), Bound.Exclusive(max)) =>
-      schema.copy(
-        minimum = Some(min),
-        exclusiveMinimum = Some(false),
-        maximum = Some(max),
-        exclusiveMaximum = Some(true))
-    case ValidBounds(Bound.Exclusive(min), Bound.Exclusive(max)) =>
-      schema.copy(
-        minimum = Some(min),
-        exclusiveMinimum = Some(true),
-        maximum = Some(max),
-        exclusiveMaximum = Some(true))
+  private def boundsSchema(schema: TapirSchema, valid: Bounds) = {
+    val minUpdated = valid.min match {
+      case None => schema
+      case Some(Bound.Inclusive(value)) =>
+        schema.copy(minimum = Some(value), exclusiveMinimum = Some(false))
+      case Some(Bound.Exclusive(value)) =>
+        schema.copy(minimum = Some(value), exclusiveMinimum = Some(true))
+    }
+    valid.max match {
+      case None => schema
+      case Some(Bound.Inclusive(value)) =>
+        minUpdated.copy(maximum = Some(value), exclusiveMaximum = Some(false))
+      case Some(Bound.Exclusive(value)) =>
+        minUpdated.copy(maximum = Some(value), exclusiveMaximum = Some(true))
+    }
   }
 }
