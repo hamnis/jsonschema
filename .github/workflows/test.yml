@@ -13,13 +13,15 @@ jobs:
       fail-fast: false
     if: "!contains(github.event.head_commit.message, 'ci skip')"
     steps:
-    - uses: actions/checkout@v2
-    - uses: coursier/cache-action@v5
-    - name: Set up JDK
-      uses: olafurpg/setup-scala@v10
-      with:
-        java-version: adopt@1.11
-    - name: Scalafmt Check
-      run: sbt scalafmtCheckAll
-    - name: "2.13 Test"
-      run: sbt "++ 2.13.5 test"
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v5
+      - name: Set up JDK
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Scalafmt Check
+        run: sbt scalafmtCheckAll
+      - name: "2.13 Test"
+        run: sbt "++ 2.13.6 test"
+      - name: "3.0 Test"
+        run: sbt "++ 3.0.0 test"

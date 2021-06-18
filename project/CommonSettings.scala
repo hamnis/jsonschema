@@ -4,6 +4,16 @@ import sbtrelease.ReleasePlugin.autoImport._
 
 object CommonSettings {
   val settings = Seq(
+    libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, _)) =>
+        Seq(compilerPlugin(("org.typelevel" % "kind-projector" % "0.13.0").cross(CrossVersion.full)))
+      case _ => Nil
+    }),
+    scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((3, _)) => Seq("-Ykind-projector")
+      case Some((2, v)) if v <= 12 => Seq("-Ypartial-unification")
+      case _ => Seq.empty
+    }),
     Compile / compile / scalacOptions ++= Seq("-release", "8"),
     Test / scalacOptions ++= Seq("-release", "11"),
     publishTo := {

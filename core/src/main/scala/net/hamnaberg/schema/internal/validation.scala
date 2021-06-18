@@ -128,22 +128,8 @@ object validation {
   def validateRecord[R](fields: FreeApplicative[Field[R, *], R], json: JsonObject, history: List[CursorOp]) =
     fields.foldMap {
       new (Field[R, *] ~> Const[ValidatedNel[ValidationError, Unit], *]) {
-        override def apply[A](fa: Field[R, A]): Const[ValidatedNel[ValidationError, Unit], A] = fa match {
-          case Field.Optional(name, elemSchema, _) =>
-            val next = CursorOp.Field(name) :: history
-            Const(json(name) match {
-              case Some(Json.Null) => ().validNel
-              case Some(value) => eval(elemSchema, value, next).map(_ => ())
-              case None => ().validNel
-            })
-          case Field.Required(name, elemSchema, default, _) =>
-            val next = CursorOp.Field(name) :: history
-            Const(json(name) match {
-              case Some(value) => eval(elemSchema, value, next).map(_ => ())
-              case None if default.isDefined => ().validNel
-              case None => ValidationError("Not a valid object", next).invalidNel
-            })
-        }
+        override def apply[A](fa: Field[R, A]): Const[ValidatedNel[ValidationError, Unit], A] =
+          Const(fa.validate(json, history))
       }
     }.getConst
 

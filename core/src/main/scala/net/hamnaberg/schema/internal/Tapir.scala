@@ -24,7 +24,10 @@ object Tapir {
       case Str(format) =>
         TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), format = format)
       case Enumeration(allowed) =>
-        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), `enum` = Some(allowed))
+        TapirSchema(
+          `type` = Some(SchemaType.String),
+          nullable = Some(false),
+          `enum` = Some(allowed.map(ExampleSingleValue(_))))
       case Sequence(value, reference, min, max) =>
         TapirSchema(
           `type` = Some(SchemaType.Array),
@@ -48,13 +51,7 @@ object Tapir {
       fields
         .foldMap(new (Field[R, *] ~> Const[List[(String, TapirSchema)], *]) {
           override def apply[A](field: Field[R, A]): Const[List[(String, TapirSchema)], A] =
-            field match {
-              case Field.Optional(name, elemSchema, _) =>
-                Const(List(name -> schemaFor(elemSchema).copy(nullable = Some(true))))
-              case Field.Required(name, elemSchema, default, _) =>
-                Const(List(name -> schemaFor(elemSchema).copy(default = default.map(e =>
-                  ExampleSingleValue(encoding.fromSchema(elemSchema).apply(e).noSpaces)))))
-            }
+            Const(field.tapirSchema)
         })
         .getConst
 

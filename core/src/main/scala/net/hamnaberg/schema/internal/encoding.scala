@@ -37,28 +37,13 @@ object encoding {
     Encoder.encodeList[A](fromSchema[A](schema))
 
   def encodeObject[R](record: FreeApplicative[Field[R, *], R]) = {
-    type Target[A] = R => Vector[(String, Json)]
+    type Target[A] = R => List[(String, Json)]
 
     record
       .analyze {
         new (Field[R, *] ~> Target) {
-          def write[E](name: String, schema: Schema[E], elem: E) =
-            Vector(name -> fromSchema(schema).apply(elem))
-
           override def apply[A](fa: Field[R, A]): Target[A] =
-            fa match {
-              case Field.Optional(name, elemSchema, get) =>
-                (r: R) => {
-                  val elem = get(r)
-                  elem.foldMap(write(name, elemSchema, _))
-                }
-
-              case Field.Required(name, elemSchema, _, get) =>
-                (r: R) => {
-                  val elem = get(r)
-                  write(name, elemSchema, elem)
-                }
-            }
+            fa.encode
         }
       }
       .andThen(JsonObject.fromIterable(_))

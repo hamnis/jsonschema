@@ -4,9 +4,12 @@ import cats.Eval
 import cats.data.{Chain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
-import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonNumber}
-import net.hamnaberg.schema.internal.validation
-import sttp.tapir.apispec.{Reference, ReferenceOr, Schema => TapirSchema}
+import io.circe.{CursorOp, Decoder, DecodingFailure, Encoder, HCursor, Json, JsonNumber, JsonObject}
+import net.hamnaberg.schema.internal.Tapir.schemaFor
+import net.hamnaberg.schema.internal.decoding.fromSchema
+import net.hamnaberg.schema.internal.encoding.fromSchema
+import net.hamnaberg.schema.internal.{encoding, validation}
+import sttp.tapir.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => TapirSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -208,7 +211,7 @@ object Schema {
 object structure {
   final case class SInt(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
   final case class SNum(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
-  final case object SBool extends Schema[Boolean]
+  case object SBool extends Schema[Boolean]
   final case class Str(format: Option[String] = None) extends Schema[String]
   final case class Sequence[A](
       value: Schema[A],
@@ -224,20 +227,79 @@ object structure {
   final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
 
-  trait Field[R, E]
+  sealed trait Field[R, E] {
+    private[schema] def decode(c: HCursor): Decoder.Result[E]
+    private[schema] def encode(obj: R): List[(String, Json)]
+    private[schema] def validate(json: JsonObject, history: List[CursorOp]): ValidatedNel[ValidationError, Unit]
+    private[schema] def tapirSchema: List[(String, TapirSchema)]
+  }
   object Field {
-    final case class Required[R, E](
-        name: String,
-        elemSchema: Schema[E],
-        default: Option[E],
-        get: R => E
-    ) extends Field[R, E]
+    private def write[E](name: String, schema: Schema[E], elem: E): List[(String, Json)] =
+      List(name -> internal.encoding.fromSchema(schema).apply(elem))
 
     final case class Optional[R, E](
         name: String,
         elemSchema: Schema[E],
         get: R => Option[E]
-    ) extends Field[R, Option[E]]
+    ) extends Field[R, Option[E]] {
+      private[schema] override def decode(c: HCursor): Decoder.Result[Option[E]] = {
+        val from = internal.decoding.fromSchema(elemSchema)
+        c.get(name)(Decoder.decodeOption(from))
+      }
+
+      override private[schema] def encode(obj: R) = {
+        val elem = get(obj)
+        elem.foldMap(write(name, elemSchema, _))
+      }
+
+      override private[schema] def validate(
+          json: JsonObject,
+          history: List[CursorOp]): ValidatedNel[ValidationError, Unit] = {
+        val next = CursorOp.Field(name) :: history
+        json(name) match {
+          case Some(Json.Null) => ().validNel
+          case Some(value) => internal.validation.eval(elemSchema, value, next).map(_ => ())
+          case None => ().validNel
+        }
+      }
+
+      override private[schema] def tapirSchema =
+        List(name -> internal.Tapir.schemaFor(elemSchema).copy(nullable = Some(true)))
+    }
+
+    final case class Required[R, E](
+        name: String,
+        elemSchema: Schema[E],
+        default: Option[E],
+        get: R => E
+    ) extends Field[R, E] {
+      private[schema] override def decode(c: HCursor) = {
+        val down = c.downField(name)
+        default match {
+          case Some(value) if down.failed => Right(value)
+          case _ => down.as(internal.decoding.fromSchema(elemSchema))
+        }
+      }
+
+      override private[schema] def encode(obj: R) =
+        write(name, elemSchema, get(obj))
+
+      override private[schema] def validate(
+          json: JsonObject,
+          history: List[CursorOp]): ValidatedNel[ValidationError, Unit] = {
+        val next = CursorOp.Field(name) :: history
+        json(name) match {
+          case Some(value) => internal.validation.eval(elemSchema, value, next).map(_ => ())
+          case None if default.isDefined => ().validNel
+          case None => ValidationError("Not a valid object", next).invalidNel
+        }
+      }
+
+      override private[schema] def tapirSchema = List(
+        name -> internal.Tapir
+          .schemaFor(elemSchema)
+          .copy(default = default.map(e => ExampleSingleValue(encoding.fromSchema(elemSchema).apply(e).noSpaces))))
+    }
   }
 
   trait Alt[A] {

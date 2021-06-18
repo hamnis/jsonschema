@@ -38,28 +38,12 @@ object decoding {
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =
     Decoder.decodeList(fromSchema[A](element))
 
-  def decodeRecord[R](fields: FreeApplicative[Field[R, *], R]) = Decoder.instance {
-    type Target[A] = Kleisli[Decoder.Result[*], HCursor, A]
-
+  def decodeRecord[R](fields: FreeApplicative[Field[R, *], R]) = Decoder.instance { c =>
     fields.foldMap {
-      new (Field[R, *] ~> Target) {
-        override def apply[A](fa: Field[R, A]): Target[A] = fa match {
-          case Field.Optional(name, elemSchema, _) =>
-            Kleisli { c =>
-              val from = fromSchema[A](elemSchema.asInstanceOf[Schema[A]])
-              c.get[Option[A]](name)(Decoder.decodeOption(from))
-            }
-          case Field.Required(name, elemSchema, default, _) =>
-            Kleisli { c =>
-              val down = c.downField(name)
-              default match {
-                case Some(value) if down.failed => Right(value)
-                case _ => down.as(fromSchema[A](elemSchema))
-              }
-            }
-        }
+      new (Field[R, *] ~> Decoder.Result[*]) {
+        override def apply[A](fa: Field[R, A]): Decoder.Result[A] = fa.decode(c)
       }
-    }.run
+    }
   }
 
   def decodeSum[R](alts: Chain[Alt[R]]): Decoder[R] =

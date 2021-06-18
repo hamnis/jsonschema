@@ -1,14 +1,22 @@
 inThisBuild(
   Seq(
     organization := "net.hamnaberg",
-    scalaVersion := "2.13.6",
-    testFrameworks += new TestFramework("munit.Framework"),
-    addCompilerPlugin(("org.typelevel" % "kind-projector" % "0.13.0").cross(CrossVersion.full))
-  ))
+    crossScalaVersions := Seq("2.13.6", "3.0.0"),
+    scalaVersion := crossScalaVersions.value.head,
+    scalacOptions ++= Seq(
+      "-feature",
+      "-deprecation",
+      "-unchecked",
+      "-encoding",
+      "utf-8",
+      "-language:higherKinds"
+    )
+  )
+)
 
-val circeVersion = "0.13.0"
+val circeVersion = "0.14.1"
 
-val tapirVersion = "0.18.0-M11"
+val tapirVersion = "0.18.0-M17"
 
 val catsVersion = "2.6.1"
 
