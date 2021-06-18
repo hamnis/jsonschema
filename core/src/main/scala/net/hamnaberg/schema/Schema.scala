@@ -5,9 +5,6 @@ import cats.data.{Chain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe.{CursorOp, Decoder, DecodingFailure, Encoder, HCursor, Json, JsonNumber, JsonObject}
-import net.hamnaberg.schema.internal.Tapir.schemaFor
-import net.hamnaberg.schema.internal.decoding.fromSchema
-import net.hamnaberg.schema.internal.encoding.fromSchema
 import net.hamnaberg.schema.internal.{encoding, validation}
 import sttp.tapir.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => TapirSchema}
 
