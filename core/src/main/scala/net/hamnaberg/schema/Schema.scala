@@ -115,6 +115,9 @@ object Schema {
   def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
     alternatives(b(alt))
 
+  def enumeration(options: List[String]) =
+    Enumeration(options)
+
   def field[R] = new FieldBuilder[R]
   def alt[R] = new AltBuilder[R]
 

@@ -120,7 +120,7 @@ object validation {
         _decoder
           .decodeAccumulating(json.hcursor)
           .fold(
-            nel => nel.map(d => ValidationError(d.message, history ++ d.history)).invalid,
+            nel => nel.map(d => ValidationError(d.message, d.history ::: history)).invalid,
             _ => json.validNel
           )
     }
