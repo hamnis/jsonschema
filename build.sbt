@@ -1,7 +1,7 @@
 inThisBuild(
   Seq(
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.13.6", "3.0.0"),
+    crossScalaVersions := Seq("2.13.6", "3.0.1"),
     scalaVersion := crossScalaVersions.value.head,
     scalacOptions ++= Seq(
       "-feature",
@@ -16,7 +16,7 @@ inThisBuild(
 
 val circeVersion = "0.14.1"
 
-val tapirVersion = "0.18.0"
+val tapirVersion = "0.18.3"
 
 val catsVersion = "2.6.1"
 
@@ -33,7 +33,7 @@ lazy val core = project
       "io.circe" %% "circe-jawn" % circeVersion,
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-free" % catsVersion,
-      "org.scalameta" %% "munit" % "0.7.26" % Test
+      "org.scalameta" %% "munit" % "0.7.28" % Test
     )
   )
 
