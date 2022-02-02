@@ -24,4 +24,4 @@ jobs:
       - name: "2.13 Test"
         run: sbt "++ 2.13.6 test"
       - name: "3.0 Test"
-        run: sbt "++ 3.0.0 test"
+        run: sbt "++ 3.1.1 test"
