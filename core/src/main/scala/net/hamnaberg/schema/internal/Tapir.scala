@@ -4,7 +4,7 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.tapir.apispec.{ExampleSingleValue, Reference, SchemaType, Schema => TapirSchema}
+import sttp.apispec.{ExampleSingleValue, Reference, SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 

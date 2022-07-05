@@ -6,7 +6,7 @@ import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe.{CursorOp, Decoder, DecodingFailure, Encoder, HCursor, Json, JsonNumber, JsonObject}
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.tapir.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => TapirSchema}
+import sttp.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => TapirSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter

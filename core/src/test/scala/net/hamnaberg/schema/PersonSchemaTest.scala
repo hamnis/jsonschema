@@ -4,7 +4,7 @@ import io.circe.{CursorOp, Decoder, Encoder, Json}
 import io.circe.syntax._
 import cats.syntax.all._
 import munit.FunSuite
-import sttp.tapir.apispec.{ReferenceOr, SchemaType, Schema => TapirSchema}
+import sttp.apispec.{ReferenceOr, SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 

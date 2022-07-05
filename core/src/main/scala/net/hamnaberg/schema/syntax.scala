@@ -1,7 +1,7 @@
 package net.hamnaberg.schema
 
-import sttp.tapir.apispec.{Reference, ReferenceOr, Schema => TapirSchema}
-import sttp.tapir.openapi.{
+import sttp.apispec.{Reference, ReferenceOr, Schema => TapirSchema}
+import sttp.apispec.openapi.{
   Components => TapirComponents,
   MediaType => TapirMediaType,
   Operation => TapirOperation,

@@ -2,7 +2,7 @@ package net.hamnaberg.schema
 
 import cats.syntax.all._
 import munit.FunSuite
-import sttp.tapir.openapi.{Components, Info, OpenAPI, PathItem}
+import sttp.apispec.openapi.{Components, Info, OpenAPI, PathItem}
 import syntax._
 
 class OpenApiTest extends FunSuite {

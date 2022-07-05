@@ -16,17 +16,17 @@ inThisBuild(
 
 val circeVersion = "0.14.1"
 
-val tapirVersion = "0.19.3"
+val tapirVersion = "0.2.1"
 
-val catsVersion = "2.7.0"
+val catsVersion = "2.8.0"
 
 lazy val core = project
   .settings(CommonSettings.settings)
   .settings(
     name := "openapi-schema-core",
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.tapir" %% "tapir-openapi-model" % tapirVersion,
-      "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe" % tapirVersion,
+      "com.softwaremill.sttp.apispec" %% "openapi-model" % tapirVersion,
+      "com.softwaremill.sttp.apispec" %% "openapi-circe" % tapirVersion,
       "io.circe" %% "circe-core" % circeVersion,
       "io.circe" %% "circe-generic" % circeVersion,
       "io.circe" %% "circe-parser" % circeVersion,
