@@ -1,7 +1,7 @@
 inThisBuild(
   Seq(
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.13.8", "3.1.1"),
+    crossScalaVersions := Seq("2.13.10", "3.2.1"),
     scalaVersion := crossScalaVersions.value.head,
     scalacOptions ++= Seq(
       "-feature",
