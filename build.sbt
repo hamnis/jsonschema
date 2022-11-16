@@ -14,11 +14,11 @@ inThisBuild(
   )
 )
 
-val circeVersion = "0.14.1"
+val circeVersion = "0.14.2"
 
-val tapirVersion = "0.2.1"
+val tapirVersion = "0.3.1"
 
-val catsVersion = "2.8.0"
+val catsVersion = "2.9.0"
 
 lazy val core = project
   .settings(CommonSettings.settings)
