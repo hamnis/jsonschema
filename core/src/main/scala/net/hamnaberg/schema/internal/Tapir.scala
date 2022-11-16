@@ -13,6 +13,8 @@ object Tapir {
 
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
+      case Described(internal, description) =>
+        schemaFor(internal).copy(description = Some(description))
       case SInt(format, bounds) =>
         val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
         boundsSchema(baseSchema, bounds)

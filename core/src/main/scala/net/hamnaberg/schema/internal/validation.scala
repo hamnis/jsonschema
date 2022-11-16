@@ -12,6 +12,7 @@ import net.hamnaberg.schema.{Bounds, Schema, ValidationError, structure}
 object validation {
   def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): ValidatedNel[ValidationError, Json] =
     schema match {
+      case structure.Described(s, _) => eval(s, json, history)
       case structure.SInt(Some("int32"), bounds) =>
         val error = ValidationError("Not a valid int", history)
         if (json.isNumber) {
