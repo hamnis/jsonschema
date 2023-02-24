@@ -2,7 +2,7 @@ package net.hamnaberg.schema
 
 import cats.syntax.all._
 import io.circe.syntax.KeyOps
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import munit.FunSuite
 
 class PersonWithAddressTest extends FunSuite {

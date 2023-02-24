@@ -2,10 +2,10 @@ package net.hamnaberg.schema
 package internal
 
 import cats._
-import cats.data.{Chain, Kleisli}
+import cats.data.Chain
 import cats.free.FreeApplicative
 import cats.syntax.all._
-import io.circe.{Decoder, DecodingFailure, HCursor}
+import io.circe.Decoder
 
 object decoding {
   import structure._

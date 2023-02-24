@@ -4,7 +4,7 @@ import cats.Eval
 import cats.data.{Chain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
-import io.circe.{CursorOp, Decoder, DecodingFailure, Encoder, HCursor, Json, JsonNumber, JsonObject}
+import io.circe._
 import net.hamnaberg.schema.internal.{encoding, validation}
 import sttp.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => TapirSchema}
 
@@ -16,7 +16,6 @@ import scala.collection.immutable
 import scala.util.Try
 
 sealed trait Schema[A] { self =>
-  import Schema._
   import structure._
 
   def compiled: TapirSchema = compiled_.value
