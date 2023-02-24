@@ -1,4 +1,4 @@
-# OpenAPI Schema
+# JSON Schema
 ![Maven Central](https://maven-badges.herokuapp.com/maven-central/net.hamnaberg/jsonschema-core_2.13/badge.svg)
 
 Implements a Json `Schema[A]` using sttp-apispec and Circe.
