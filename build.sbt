@@ -2,6 +2,7 @@ inThisBuild(
   Seq(
     tlBaseVersion := "0.4",
     startYear := Some(2021),
+    organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
     crossScalaVersions := Seq("2.13.10", "3.2.2"),
     scalaVersion := crossScalaVersions.value.head,
@@ -22,6 +23,7 @@ val catsVersion = "2.9.0"
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "jsonschema-core",
+    headerLicenseStyle := HeaderLicenseStyle.SpdxSyntax,
     libraryDependencies ++= Seq(
       "com.softwaremill.sttp.apispec" %%% "apispec-model" % tapirVersion,
       "com.softwaremill.sttp.apispec" %%% "jsonschema-circe" % tapirVersion % Test,
