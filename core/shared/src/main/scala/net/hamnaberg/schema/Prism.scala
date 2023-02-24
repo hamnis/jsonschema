@@ -1,6 +1,5 @@
 /*
- * Copyright 2020 Fabio Labella
- * Copied from: https://github.com/SystemFw/dynosaur/blob/main/modules/core/src/main/scala/Prism.scala
+ * Copyright 2021 Typelevel
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package net.hamnaberg.schema
 
 import scala.annotation.implicitNotFound

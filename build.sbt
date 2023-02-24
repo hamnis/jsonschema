@@ -9,7 +9,7 @@ inThisBuild(
     developers := List(
       tlGitHubDev("hamnis", "Erlend Hamnaberg")
     )
- )
+  )
 )
 
 val circeVersion = "0.14.3"
