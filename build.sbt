@@ -8,7 +8,8 @@ inThisBuild(
     ThisBuild / licenses := Seq(License.Apache2),
     developers := List(
       tlGitHubDev("hamnis", "Erlend Hamnaberg")
-    )
+    ),
+    tlCiReleaseBranches := Nil
   )
 )
 
