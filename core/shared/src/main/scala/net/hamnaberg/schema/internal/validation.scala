@@ -109,9 +109,11 @@ object validation {
         eval(s(), json, history)
       case structure.Enumeration(allowed) =>
         val error = ValidationError(s"Not a valid enumeration, expected one of $allowed", history)
-        if (json.isString)
-          json.asString.filter(allowed.contains).as(json).toValidNel(error)
-        else error.invalidNel
+        json.asString
+          .collect {
+            case s if allowed.contains(s) => json
+          }
+          .toValidNel(error)
       case structure.Sum(alts) =>
         alts.toList.toNel match {
           case Some(nel) =>
