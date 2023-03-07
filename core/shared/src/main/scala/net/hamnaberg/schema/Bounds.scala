@@ -22,6 +22,15 @@ final case class Bounds(min: Option[Bound], max: Option[Bound]) {
   }
 }
 
+object Bounds {
+  val NO: Bounds = Bounds(None, None)
+
+  def both(min: Bound, max: Bound): Bounds = apply(Some(min), Some(max))
+
+  def min(min: Bound) = Bounds(Some(min), None)
+  def max(max: Bound) = Bounds(None, Some(max))
+}
+
 sealed trait Bound
 
 sealed trait BoundCompanion[A] {

@@ -92,20 +92,20 @@ object Schema {
 
   def apply[A](implicit S: Schema[A]) = S
 
-  def boundedInt(min: Option[Bound], max: Option[Bound]): Schema[Int] =
-    SInt(Some("int32"), Bounds(min, max)).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
+  def boundedInt(bounds: Bounds): Schema[Int] =
+    SInt(Some("int32"), bounds).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedLong(min: Option[Bound], max: Option[Bound]): Schema[Long] =
-    SInt(Some("int64"), Bounds(min, max)).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
+  def boundedLong(bounds: Bounds): Schema[Long] =
+    SInt(Some("int64"), bounds).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedDouble(min: Option[Bound], max: Option[Bound]): Schema[Double] =
-    SNum(Some("double"), Bounds(min, max)).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
-  def boundedBigInt(min: Option[Bound], max: Option[Bound]): Schema[BigInt] =
-    SInt(None, Bounds(min, max)).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
+  def boundedDouble(bounds: Bounds): Schema[Double] =
+    SNum(Some("double"), bounds).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
+  def boundedBigInt(bounds: Bounds): Schema[BigInt] =
+    SInt(None, bounds).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
 
-  def boundedFloat(min: Option[Bound], max: Option[Bound]): Schema[Float] =
-    SNum(Some("float"), Bounds(min, max)).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
+  def boundedFloat(bounds: Bounds): Schema[Float] =
+    SNum(Some("float"), bounds).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
 
   def fields[R](p: FreeApplicative[Field[R, *], R]): Schema[R] = Record(p)
   def record[R](
@@ -170,12 +170,14 @@ object Schema {
       }
   }
 
-  implicit val int: Schema[Int] = boundedInt(None, None)
-  implicit val long: Schema[Long] = boundedLong(None, None)
-  implicit val bigInt: Schema[BigInt] = boundedBigInt(None, None)
-  implicit val double: Schema[Double] = boundedDouble(None, None)
-  implicit val float: Schema[Float] = boundedFloat(None, None)
-  implicit val string: Schema[String] = Str(None)
+  implicit val int: Schema[Int] = boundedInt(Bounds.NO)
+  implicit val long: Schema[Long] = boundedLong(Bounds.NO)
+  implicit val bigInt: Schema[BigInt] = boundedBigInt(Bounds.NO)
+  implicit val double: Schema[Double] = boundedDouble(Bounds.NO)
+  implicit val float: Schema[Float] = boundedFloat(Bounds.NO)
+
+  implicit val stringInstance: Schema[String] = string
+  def string[A]: Schema[String] = Str(None)
   implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
     Try(UUID.fromString(s)).toEither.leftMap(m =>
       DecodingFailure(Option(m.getMessage).getOrElse("Not a valid UUID"), Nil)))(_.toString)
