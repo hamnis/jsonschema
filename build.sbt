@@ -14,7 +14,7 @@ inThisBuild(
   )
 )
 
-val circeVersion = "0.14.3"
+val circeVersion = "0.14.5"
 
 val tapirVersion = "0.3.2"
 
