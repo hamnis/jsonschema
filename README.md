@@ -30,7 +30,7 @@ object Person {
   implicit val schema: Schema[Person] = Schema.record[Person] { field =>
     (
       field[String]("name", _.name),
-      field[Int]("age", _.age)(Schema.boundedInt(Bound.Inclusive(0), Bound.Exclusive(150)))
+      field[Int]("age", _.age)(Schema.boundedInt(Bounds.both(Bound.Inclusive(0), Bound.Exclusive(150))))
       ).mapN(Person.apply)
   }
 }
