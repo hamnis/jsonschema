@@ -7,7 +7,7 @@
 package net.hamnaberg.schema
 
 import cats.Eval
-import cats.data.{Chain, ValidatedNel}
+import cats.data.{Chain, NonEmptyChain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
@@ -139,6 +139,7 @@ object Schema {
   def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
     Custom(Right(schema), encoder, decoder)
 
+  def allOf[A](schemas: NonEmptyChain[Schema[A]]): Schema[A] = AllOf(schemas)
   def alternatives[A](cases: Chain[Alt[A]]): Schema[A] =
     Sum(cases)
   def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
@@ -254,6 +255,7 @@ object structure {
   final case class Isos[A](value: XMap[A]) extends Schema[A]
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
   final case class Enumeration(allowed: List[String]) extends Schema[String]
+  final case class AllOf[A](value: NonEmptyChain[Schema[A]]) extends Schema[A]
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]

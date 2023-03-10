@@ -41,6 +41,7 @@ object decoding {
       case Defer(f) => fromSchema(f())
       case Custom(_, _, decoder) => decoder
       case Sum(alts) => decodeSum(alts)
+      case AllOf(all) => fromSchema(all.head)
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =

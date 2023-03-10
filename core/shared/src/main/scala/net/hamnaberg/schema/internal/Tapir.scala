@@ -50,6 +50,7 @@ object Tapir {
       case Custom(schema, _, _) => TapirSchema(allOf = List(schema))
       case Sum(alts) =>
         TapirSchema(oneOf = alts.map(c => Right(schemaFor(c.caseSchema))).toList)
+      case AllOf(schemas) => TapirSchema(allOf = schemas.map(c => Right(schemaFor(c))).toList)
     }
 
   def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): TapirSchema = {

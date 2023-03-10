@@ -124,6 +124,8 @@ object validation {
               .map(_ => json)
           case None => ValidationError("No cases for Sum type", history).invalidNel
         }
+      case structure.AllOf(all) =>
+        all.traverse_(s => eval(s, json, history)).as(json)
       case structure.Custom(_, _, _decoder) =>
         _decoder
           .decodeAccumulating(json.hcursor)
