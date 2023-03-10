@@ -21,10 +21,11 @@ class JsonSchemaRenderingTest extends FunSuite with ResourcePlatform {
       }
       .withDescription("A geographical coordinate.")
       .withTitle("Longitude and Latitude Values")
+      .withMetaSchema("https://json-schema.org/draft/2020-12/schema")
 
     val Right(loaded) = load("/schema1.json")
 
-    val compiled = schema.withMetaSchema("https://json-schema.org/draft/2020-12/schema").compiled
+    val compiled = schema.compiled
     assertEquals(compiled.asJson, loaded.asJson)
   }
 
