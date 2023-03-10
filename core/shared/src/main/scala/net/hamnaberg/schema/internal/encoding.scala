@@ -18,7 +18,7 @@ object encoding {
   import structure._
 
   def fromSchema[A](schema: Schema[A]): Encoder[A] = schema match {
-    case Described(s, _) =>
+    case Meta(s, _, _, _) =>
       fromSchema(s)
     case SInt(_, _) =>
       Encoder.encodeJsonNumber

@@ -19,8 +19,8 @@ object Tapir {
 
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
-      case Described(internal, description) =>
-        schemaFor(internal).copy(description = Some(description))
+      case Meta(internal, meta, description, title) =>
+        schemaFor(internal).copy($schema = meta, description = description, title = title)
       case SInt(format, bounds) =>
         val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
         boundsSchema(baseSchema, bounds)
@@ -81,14 +81,14 @@ object Tapir {
     val minUpdated = valid.min match {
       case None => schema
       case Some(Bound.Inclusive(value)) =>
-        schema.copy(minimum = Some(value), exclusiveMinimum = Some(false))
+        schema.copy(minimum = Some(value))
       case Some(Bound.Exclusive(value)) =>
         schema.copy(minimum = Some(value), exclusiveMinimum = Some(true))
     }
     valid.max match {
       case None => schema
       case Some(Bound.Inclusive(value)) =>
-        minUpdated.copy(maximum = Some(value), exclusiveMaximum = Some(false))
+        minUpdated.copy(maximum = Some(value))
       case Some(Bound.Exclusive(value)) =>
         minUpdated.copy(maximum = Some(value), exclusiveMaximum = Some(true))
     }

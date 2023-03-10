@@ -53,7 +53,29 @@ sealed trait Schema[A] { self =>
   def at(field: String, ref: Option[Reference] = None): Schema[A] =
     Schema.record[A](_(field, identity)(ref.map(this.reference).getOrElse(this)))
 
-  def withDescription(description: String) = Described(this, description)
+  def withDescription(description: String) =
+    this match {
+      case Meta(schema, meta, _, title) =>
+        Meta(schema, meta, Some(description), title)
+      case other =>
+        Meta(other, None, Some(description), None)
+    }
+
+  def withTitle(title: String) =
+    this match {
+      case Meta(schema, meta, desc, _) =>
+        Meta(schema, meta, desc, Some(title))
+      case other =>
+        Meta(other, None, None, Some(title))
+    }
+
+  def withMetaSchema(metaSchema: String) =
+    this match {
+      case Meta(schema, _, desc, title) =>
+        Meta(schema, Some(metaSchema), desc, title)
+      case other =>
+        Meta(other, Some(metaSchema), None, None)
+    }
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
     Isos {
@@ -235,7 +257,12 @@ object structure {
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
-  final case class Described[A](schema: Schema[A], description: String) extends Schema[A]
+  final case class Meta[A](
+      schema: Schema[A],
+      metaSchema: Option[String],
+      description: Option[String],
+      title: Option[String])
+      extends Schema[A]
 
   sealed trait Field[R, E] {
     private[schema] def decode(c: HCursor): Decoder.Result[E]
