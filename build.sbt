@@ -10,7 +10,8 @@ inThisBuild(
     developers := List(
       tlGitHubDev("hamnis", "Erlend Hamnaberg")
     ),
-    tlCiReleaseBranches := Nil
+    tlCiReleaseBranches := Nil,
+    githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
   )
 )
 
