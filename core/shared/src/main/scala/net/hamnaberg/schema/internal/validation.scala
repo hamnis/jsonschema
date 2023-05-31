@@ -124,8 +124,10 @@ object validation {
               .map(_ => json)
           case None => ValidationError("No cases for Sum type", history).invalidNel
         }
-      case structure.AllOf(all) =>
-        all.traverse_(s => eval(s, json, history)).as(json)
+      case structure.AllOf(chain, optSchema) =>
+        val all = chain.traverse_(s => eval(s, json, history)).as(json)
+        optSchema.map(s => eval(s, json, history).andThen(_ => all)).getOrElse(all)
+
       case structure.Custom(_, _, _decoder) =>
         _decoder
           .decodeAccumulating(json.hcursor)
@@ -133,8 +135,11 @@ object validation {
             nel => nel.map(d => ValidationError(d.message, d.history ::: history)).invalid,
             _ => json.validNel
           )
-      case structure.AnyOf(chain) =>
-        chain.tail.foldLeft(eval(chain.head, json, history)) { case (agg, s) => agg.orElse(eval(s, json, history)) }
+      case structure.AnyOf(chain, optSchema) =>
+        val any = chain.tail.foldLeft(eval(chain.head, json, history)) { case (agg, s) =>
+          agg.orElse(eval(s, json, history))
+        }
+        optSchema.map(s => eval(s, json, history).andThen(_ => any)).getOrElse(any)
     }
 
   def validateRecord[R](fields: FreeApplicative[Field[R, *], R], json: JsonObject, history: List[CursorOp]) =

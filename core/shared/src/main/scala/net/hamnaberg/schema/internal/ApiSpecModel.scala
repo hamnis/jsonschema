@@ -50,8 +50,12 @@ object ApiSpecModel {
       case Custom(schema, _, _) => TapirSchema(allOf = List(schema))
       case Sum(alts) =>
         TapirSchema(oneOf = alts.map(c => Right(schemaFor(c.caseSchema))).toList)
-      case AllOf(schemas) => TapirSchema(allOf = schemas.map(c => Right(schemaFor(c))).toList)
-      case AnyOf(schemas) => TapirSchema(anyOf = schemas.map(c => Right(schemaFor(c))).toList)
+      case AllOf(schemas, sOpt) =>
+        val allOf = TapirSchema(allOf = schemas.map(c => Right(schemaFor(c))).toList)
+        sOpt.map(s => schemaFor(s).copy(allOf = allOf.allOf)).getOrElse(allOf)
+      case AnyOf(schemas, sOpt) =>
+        val any = TapirSchema(anyOf = schemas.map(c => Right(schemaFor(c))).toList)
+        sOpt.map(s => schemaFor(s).copy(anyOf = any.anyOf)).getOrElse(any)
     }
 
   def recordSchema[R](fields: FreeApplicative[Field[R, *], R]): TapirSchema = {

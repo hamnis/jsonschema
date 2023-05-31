@@ -39,8 +39,12 @@ object encoding {
     case Defer(f) => fromSchema(f())
     case Custom(_, encoder, _) => encoder
     case Sum(alts) => encodeAlternatives(alts)
-    case AllOf(all) => fromSchema(all.head)
-    case AnyOf(chain) => fromSchema(chain.head)
+    case AllOf(all, sOpt) =>
+      val s = sOpt.getOrElse(all.head)
+      fromSchema(s)
+    case AnyOf(chain, sOpt) =>
+      val s = sOpt.getOrElse(chain.head)
+      fromSchema(s)
   }
 
   def encodeList[A](schema: Schema[A]): Encoder[List[A]] =
