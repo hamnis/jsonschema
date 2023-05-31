@@ -256,6 +256,7 @@ object structure {
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
   final case class Enumeration(allowed: List[String]) extends Schema[String]
   final case class AllOf[A](value: NonEmptyChain[Schema[A]]) extends Schema[A]
+  final case class AnyOf[A](value: NonEmptyChain[Schema[A]]) extends Schema[A]
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   final case class Custom[A](_compiled: ReferenceOr[ApiSpecSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]

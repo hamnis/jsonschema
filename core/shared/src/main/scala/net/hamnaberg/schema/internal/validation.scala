@@ -133,6 +133,8 @@ object validation {
             nel => nel.map(d => ValidationError(d.message, d.history ::: history)).invalid,
             _ => json.validNel
           )
+      case structure.AnyOf(chain) =>
+        chain.tail.foldLeft(eval(chain.head, json, history)) { case (agg, s) => agg.orElse(eval(s, json, history)) }
     }
 
   def validateRecord[R](fields: FreeApplicative[Field[R, *], R], json: JsonObject, history: List[CursorOp]) =

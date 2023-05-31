@@ -40,6 +40,7 @@ object encoding {
     case Custom(_, encoder, _) => encoder
     case Sum(alts) => encodeAlternatives(alts)
     case AllOf(all) => fromSchema(all.head)
+    case AnyOf(chain) => fromSchema(chain.head)
   }
 
   def encodeList[A](schema: Schema[A]): Encoder[List[A]] =

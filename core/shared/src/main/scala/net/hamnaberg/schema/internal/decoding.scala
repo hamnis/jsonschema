@@ -42,6 +42,9 @@ object decoding {
       case Custom(_, _, decoder) => decoder
       case Sum(alts) => decodeSum(alts)
       case AllOf(all) => fromSchema(all.head)
+      case AnyOf(nel) =>
+        val head = fromSchema(nel.head)
+        nel.tail.foldLeft(head) { case (dec, s) => dec.orElse(fromSchema(s)) }
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =
