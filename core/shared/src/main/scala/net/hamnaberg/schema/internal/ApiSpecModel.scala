@@ -29,8 +29,15 @@ object ApiSpecModel {
         boundsSchema(baseSchema, bounds)
       case SBool =>
         TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
-      case Str(format) =>
-        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), format = format)
+      case Str(format, min, max, pattern) =>
+        TapirSchema(
+          `type` = Some(SchemaType.String),
+          nullable = Some(false),
+          format = format,
+          minLength = min,
+          maxLength = max,
+          pattern = pattern
+        )
       case Enumeration(allowed) =>
         TapirSchema(
           `type` = Some(SchemaType.String),

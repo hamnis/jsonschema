@@ -14,7 +14,7 @@ import io.circe.{CursorOp, Json, JsonObject}
 import net.hamnaberg.schema.structure.Field
 import net.hamnaberg.schema.{Schema, ValidationError, structure}
 
-object validation {
+object validation extends StringValidationPlatform {
   def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): ValidatedNel[ValidationError, Json] =
     schema match {
       case structure.Meta(s, _, _, _) => eval(s, json, history)
@@ -66,19 +66,25 @@ object validation {
       case structure.SBool =>
         val error = ValidationError("Not a valid boolean", history)
         if (json.isBoolean) json.validNel else error.invalidNel
-      case structure.Str(None) =>
+      case structure.Str(format, min, max, pattern) =>
         val error = ValidationError("Not a valid string", history)
-        json.asString.as(json).toValidNel(error)
+        //todo: handle all known formats
+        val decodedString = json.asString
+        def validate(s: String) = {
+          val validMin =
+            if (min.forall(length => s.length >= length)) s.validNel[ValidationError]
+            else ValidationError(s"Too short string, expected minimum ${min.getOrElse(0)}", history).invalidNel
+          val validMax = {
+            if (max.forall(length => s.length <= length)) s.validNel[ValidationError]
+            else ValidationError(s"Too long string, expected maximum ${max.getOrElse(0)}", history).invalidNel
+          }
+          val validPattern = pattern.map(p => validatePattern(s, p, history)).getOrElse(json.validNel)
+          (validMin, validMax, validPattern).mapN((_, _, _) => json)
+        }
 
-      case structure.Str(Some(frmt)) =>
-        decoding
-          .fromSchema(schema)
-          .decodeJson(json)
-          .fold(
-            e => ValidationError(s"Not a valid formatted string ($frmt)", history ++ e.history).invalidNel,
-            _ => json.validNel
-          )
-
+        decodedString
+          .toValidNel[ValidationError](error)
+          .andThen(s => validate(s))
       case structure.Sequence(elementSchema, _, min, max) =>
         val error = ValidationError("Not a valid array", history)
         json.asArray match {

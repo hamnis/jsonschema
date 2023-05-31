@@ -12,7 +12,7 @@ import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => ApiSpecSchema}
+import sttp.apispec.{ExampleSingleValue, Pattern, Reference, ReferenceOr, Schema => ApiSpecSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -146,8 +146,16 @@ object Schema {
   def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
     alternatives(b(alt))
 
+  //TODO: According to https://json-schema.org/draft/2020-12/json-schema-validation.html#section-6.1.2
+  //this can be any type
   def enumeration(options: List[String]) =
     Enumeration(options)
+  def string[A](
+      format: Option[String] = None,
+      minLength: Option[Int] = None,
+      maxLength: Option[Int] = None,
+      pattern: Option[Pattern] = None
+  ): Schema[String] = Str(format, minLength, maxLength, pattern)
 
   def field[R] = new FieldBuilder[R]
   def alt[R] = new AltBuilder[R]
@@ -200,8 +208,7 @@ object Schema {
   implicit val double: Schema[Double] = boundedDouble(Bounds.NO)
   implicit val float: Schema[Float] = boundedFloat(Bounds.NO)
 
-  implicit val stringInstance: Schema[String] = string
-  def string[A]: Schema[String] = Str(None)
+  implicit val stringInstance: Schema[String] = string()
   implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
     Try(UUID.fromString(s)).toEither.leftMap(m =>
       DecodingFailure(Option(m.getMessage).getOrElse("Not a valid UUID"), Nil)))(_.toString)
@@ -245,7 +252,12 @@ object structure {
   final case class SInt(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
   final case class SNum(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
   case object SBool extends Schema[Boolean]
-  final case class Str(format: Option[String] = None) extends Schema[String]
+  final case class Str(
+      format: Option[String] = None,
+      minLength: Option[Int] = None,
+      maxLength: Option[Int] = None,
+      pattern: Option[Pattern] = None
+  ) extends Schema[String]
   final case class Sequence[A](
       value: Schema[A],
       reference: Option[Reference] = None,
