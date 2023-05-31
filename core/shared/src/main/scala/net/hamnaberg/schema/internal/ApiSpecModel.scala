@@ -14,7 +14,7 @@ import sttp.apispec.{ExampleSingleValue, Reference, SchemaType, Schema => TapirS
 
 import scala.collection.immutable.ListMap
 
-object Tapir {
+object ApiSpecModel {
   import structure._
 
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
@@ -60,7 +60,7 @@ object Tapir {
       fields
         .foldMap(new (Field[R, *] ~> Const[List[(String, TapirSchema)], *]) {
           override def apply[A](field: Field[R, A]): Const[List[(String, TapirSchema)], A] =
-            Const(field.tapirSchema)
+            Const(field.apiSpecSchema)
         })
         .getConst
 

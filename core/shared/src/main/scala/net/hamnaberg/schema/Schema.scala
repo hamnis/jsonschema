@@ -12,7 +12,7 @@ import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => TapirSchema}
+import sttp.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => ApiSpecSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -24,7 +24,7 @@ import scala.util.Try
 sealed trait Schema[A] { self =>
   import structure._
 
-  def compiled: TapirSchema = compiled_.value
+  def compiled: ApiSpecSchema = compiled_.value
   def decoder: Decoder[A] = decoder_.value
   def encoder: Encoder[A] = encoder_.value
 
@@ -97,8 +97,8 @@ sealed trait Schema[A] { self =>
       }
     }
 
-  val compiled_ : Eval[TapirSchema] = Eval.later(
-    internal.Tapir.schemaFor(this)
+  val compiled_ : Eval[ApiSpecSchema] = Eval.later(
+    internal.ApiSpecModel.schemaFor(this)
   )
 
   val decoder_ : Eval[Decoder[A]] = Eval.later(
@@ -136,7 +136,7 @@ object Schema {
     fields(b(field))
   def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
 
-  def custom[A](schema: TapirSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
+  def custom[A](schema: ApiSpecSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
     Custom(Right(schema), encoder, decoder)
 
   def allOf[A](schemas: NonEmptyChain[Schema[A]]): Schema[A] = AllOf(schemas)
@@ -257,7 +257,7 @@ object structure {
   final case class Enumeration(allowed: List[String]) extends Schema[String]
   final case class AllOf[A](value: NonEmptyChain[Schema[A]]) extends Schema[A]
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
-  final case class Custom[A](_compiled: ReferenceOr[TapirSchema], _encoder: Encoder[A], _decoder: Decoder[A])
+  final case class Custom[A](_compiled: ReferenceOr[ApiSpecSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
   final case class Meta[A](
       schema: Schema[A],
@@ -270,7 +270,7 @@ object structure {
     private[schema] def decode(c: HCursor): Decoder.Result[E]
     private[schema] def encode(obj: R): List[(String, Json)]
     private[schema] def validate(json: JsonObject, history: List[CursorOp]): ValidatedNel[ValidationError, Unit]
-    private[schema] def tapirSchema: List[(String, TapirSchema)]
+    private[schema] def apiSpecSchema: List[(String, ApiSpecSchema)]
   }
   object Field {
     private def write[E](name: String, schema: Schema[E], elem: E): List[(String, Json)] =
@@ -302,8 +302,8 @@ object structure {
         }
       }
 
-      override private[schema] def tapirSchema =
-        List(name -> internal.Tapir.schemaFor(elemSchema).copy(nullable = Some(true)))
+      override private[schema] def apiSpecSchema =
+        List(name -> internal.ApiSpecModel.schemaFor(elemSchema).copy(nullable = Some(true)))
     }
 
     final case class Required[R, E](
@@ -334,8 +334,8 @@ object structure {
         }
       }
 
-      override private[schema] def tapirSchema = List(
-        name -> internal.Tapir
+      override private[schema] def apiSpecSchema = List(
+        name -> internal.ApiSpecModel
           .schemaFor(elemSchema)
           .copy(default = default.map(e => ExampleSingleValue(encoding.fromSchema(elemSchema).apply(e).noSpaces))))
     }

@@ -17,7 +17,7 @@ inThisBuild(
 
 val circeVersion = "0.14.5"
 
-val tapirVersion = "0.3.2"
+val sttpModelVersion = "0.4.0"
 
 val catsVersion = "2.9.0"
 
@@ -26,8 +26,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
     name := "jsonschema-core",
     headerLicenseStyle := HeaderLicenseStyle.SpdxSyntax,
     libraryDependencies ++= Seq(
-      "com.softwaremill.sttp.apispec" %%% "apispec-model" % tapirVersion,
-      "com.softwaremill.sttp.apispec" %%% "jsonschema-circe" % tapirVersion % Test,
+      "com.softwaremill.sttp.apispec" %%% "apispec-model" % sttpModelVersion,
+      "com.softwaremill.sttp.apispec" %%% "jsonschema-circe" % sttpModelVersion % Test,
       "io.circe" %%% "circe-core" % circeVersion,
       "io.circe" %%% "circe-generic" % circeVersion,
       "io.circe" %%% "circe-parser" % circeVersion,
