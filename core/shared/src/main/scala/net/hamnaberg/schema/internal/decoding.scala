@@ -41,10 +41,13 @@ object decoding {
       case Defer(f) => fromSchema(f())
       case Custom(_, _, decoder) => decoder
       case Sum(alts) => decodeSum(alts)
-      case AllOf(all) => fromSchema(all.head)
-      case AnyOf(nel) =>
-        val head = fromSchema(nel.head)
-        nel.tail.foldLeft(head) { case (dec, s) => dec.orElse(fromSchema(s)) }
+      case AllOf(all, sOpt) =>
+        val s = sOpt.getOrElse(all.head)
+        fromSchema(s)
+      case AnyOf(nel, sOpt) =>
+        val (s, rest) = sOpt.map(s => s -> nel.toChain).getOrElse(nel.head -> nel.tail)
+        val head = fromSchema(s)
+        rest.foldLeft(head) { case (dec, s) => dec.orElse(fromSchema(s)) }
     }
 
   def decodeList[A](element: Schema[A]): Decoder[List[A]] =

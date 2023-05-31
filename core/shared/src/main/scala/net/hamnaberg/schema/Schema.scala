@@ -21,7 +21,7 @@ import java.util.UUID
 import scala.collection.immutable
 import scala.util.Try
 
-sealed trait Schema[A] { self =>
+sealed trait Schema[A] extends Product with Serializable { self =>
   import structure._
 
   def compiled: ApiSpecSchema = compiled_.value
@@ -139,7 +139,8 @@ object Schema {
   def custom[A](schema: ApiSpecSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
     Custom(Right(schema), encoder, decoder)
 
-  def allOf[A](schemas: NonEmptyChain[Schema[A]]): Schema[A] = AllOf(schemas)
+  def allOf[A](schemas: NonEmptyChain[Schema[A]], schema: Option[Schema[A]]): Schema[A] = AllOf(schemas, schema)
+  def anyOf[A](schemas: NonEmptyChain[Schema[A]], schema: Option[Schema[A]]): Schema[A] = AnyOf(schemas, schema)
   def alternatives[A](cases: Chain[Alt[A]]): Schema[A] =
     Sum(cases)
   def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
@@ -255,8 +256,8 @@ object structure {
   final case class Isos[A](value: XMap[A]) extends Schema[A]
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
   final case class Enumeration(allowed: List[String]) extends Schema[String]
-  final case class AllOf[A](value: NonEmptyChain[Schema[A]]) extends Schema[A]
-  final case class AnyOf[A](value: NonEmptyChain[Schema[A]]) extends Schema[A]
+  final case class AllOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
+  final case class AnyOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
   final case class Custom[A](_compiled: ReferenceOr[ApiSpecSchema], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
@@ -267,7 +268,7 @@ object structure {
       title: Option[String])
       extends Schema[A]
 
-  sealed trait Field[R, E] {
+  sealed trait Field[R, E] extends Product with Serializable {
     private[schema] def decode(c: HCursor): Decoder.Result[E]
     private[schema] def encode(obj: R): List[(String, Json)]
     private[schema] def validate(json: JsonObject, history: List[CursorOp]): ValidatedNel[ValidationError, Unit]
@@ -342,13 +343,13 @@ object structure {
     }
   }
 
-  trait Alt[A] {
+  trait Alt[A] extends Serializable {
     type Case
     def caseSchema: Schema[Case]
     def prism: Prism[A, Case]
   }
 
-  trait XMap[A] {
+  trait XMap[A] extends Serializable {
     type Repr
     def schema: Schema[Repr]
     def w: A => Repr
