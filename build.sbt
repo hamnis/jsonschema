@@ -4,7 +4,7 @@ inThisBuild(
     startYear := Some(2021),
     organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.13.10", "3.2.2"),
+    crossScalaVersions := Seq("2.13.10", "3.3.0"),
     scalaVersion := crossScalaVersions.value.head,
     ThisBuild / licenses := Seq(License.Apache2),
     developers := List(
