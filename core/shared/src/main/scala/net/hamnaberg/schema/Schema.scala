@@ -21,7 +21,7 @@ import java.util.UUID
 import scala.collection.immutable
 import scala.util.Try
 
-sealed trait Schema[A] { self =>
+sealed trait Schema[A] extends Product with Serializable { self =>
   import structure._
 
   def compiled: ApiSpecSchema = compiled_.value
