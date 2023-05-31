@@ -268,7 +268,7 @@ object structure {
       title: Option[String])
       extends Schema[A]
 
-  sealed trait Field[R, E] {
+  sealed trait Field[R, E] extends Product with Serializable {
     private[schema] def decode(c: HCursor): Decoder.Result[E]
     private[schema] def encode(obj: R): List[(String, Json)]
     private[schema] def validate(json: JsonObject, history: List[CursorOp]): ValidatedNel[ValidationError, Unit]
