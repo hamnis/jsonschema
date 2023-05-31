@@ -343,13 +343,13 @@ object structure {
     }
   }
 
-  trait Alt[A] {
+  trait Alt[A] extends Serializable {
     type Case
     def caseSchema: Schema[Case]
     def prism: Prism[A, Case]
   }
 
-  trait XMap[A] {
+  trait XMap[A] extends Serializable {
     type Repr
     def schema: Schema[Repr]
     def w: A => Repr
