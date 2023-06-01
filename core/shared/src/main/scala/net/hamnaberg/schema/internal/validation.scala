@@ -69,7 +69,6 @@ object validation extends StringValidationPlatform {
       case structure.Str(format, min, max, pattern) =>
         val error = ValidationError("Not a valid string", history)
         //todo: handle all known formats
-        val decodedString = json.asString
         def validate(s: String) = {
           val validMin =
             if (min.forall(length => s.length >= length)) s.validNel[ValidationError]
@@ -81,10 +80,24 @@ object validation extends StringValidationPlatform {
           val validPattern = pattern.map(p => validatePattern(s, p, history)).getOrElse(json.validNel)
           (validMin, validMax, validPattern).mapN((_, _, _) => json)
         }
-
-        decodedString
-          .toValidNel[ValidationError](error)
-          .andThen(s => validate(s))
+        format
+          .map(fmt =>
+            decoding
+              .fromSchema(schema)
+              .decodeJson(json)
+              .fold(
+                err =>
+                  ValidationError(
+                    s"Unable to decode formatted string using decoder. Format is '${fmt}''",
+                    err.history ::: history).invalidNel,
+                _ => json.validNel
+              ))
+          .getOrElse {
+            val decodedString = json.asString
+            decodedString
+              .toValidNel[ValidationError](error)
+              .andThen(s => validate(s))
+          }
       case structure.Sequence(elementSchema, _, min, max) =>
         val error = ValidationError("Not a valid array", history)
         json.asArray match {
