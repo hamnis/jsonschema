@@ -93,8 +93,7 @@ object validation extends StringValidationPlatform {
                 s => validate(s)
               ))
           .getOrElse {
-            val decodedString = json.asString
-            decodedString
+            json.asString
               .toValidNel[ValidationError](error)
               .andThen(s => validate(s))
           }
