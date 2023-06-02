@@ -47,7 +47,7 @@ sealed trait Schema[A] extends Product with Serializable { self =>
       reference: Option[Reference] = None,
       min: Option[Int] = None,
       max: Option[Int] = None): Schema[immutable.Seq[A]] =
-    asList(reference, min, max).imap(_.toSeq: immutable.Seq[A])(_.toList)
+    asList(reference, min, max).imap[immutable.Seq[A]](x => x)(_.toList)
 
   def reference(ref: Reference): Schema[A] = Custom(Left(ref), encoder, decoder)
 
@@ -244,9 +244,9 @@ object Schema {
         DecodingFailure(Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"), Nil)))(b =>
       formatter.format(b))
 
-  implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector()
-  implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList()
-  implicit def seq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq()
+  implicit def unboundedVector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector()
+  implicit def unboundedList[A](implicit s: Schema[A]): Schema[List[A]] = s.asList()
+  implicit def unboundedSeq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq()
 }
 
 object structure {
@@ -270,6 +270,7 @@ object structure {
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   final case class Isos[A](value: XMap[A]) extends Schema[A]
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
+  //todo: enums may be of any type
   final case class Enumeration(allowed: List[String]) extends Schema[String]
   final case class AllOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class AnyOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
