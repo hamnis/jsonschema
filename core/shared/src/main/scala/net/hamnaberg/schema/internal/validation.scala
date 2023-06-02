@@ -90,7 +90,7 @@ object validation extends StringValidationPlatform {
                   ValidationError(
                     s"Unable to decode formatted string using decoder. Format is '${fmt}''",
                     err.history ::: history).invalidNel,
-                _ => json.validNel
+                s => validate(s)
               ))
           .getOrElse {
             val decodedString = json.asString
