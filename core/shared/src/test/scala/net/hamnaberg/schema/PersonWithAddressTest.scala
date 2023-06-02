@@ -15,7 +15,7 @@ class PersonWithAddressTest extends FunSuite {
   case class Person(name: String, age: Int)
   object Person {
     implicit val schema: Schema[Person] = Schema.record[Person] { field =>
-      (field("name", _.name), field("age", _.age)(Schema.boundedInt(Bounds.min(Bound.Inclusive.fromInt(18)))))
+      (field("name", _.name), field("age", _.age)(Schema.boundedInt(Bounds.min(Bound.Inclusive(18)))))
         .mapN(apply)
     }
   }

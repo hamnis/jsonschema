@@ -18,6 +18,7 @@ import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
 import java.util.UUID
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.util.Try
 
@@ -114,19 +115,19 @@ object Schema {
 
   def apply[A](implicit S: Schema[A]) = S
 
-  def boundedInt(bounds: Bounds): Schema[Int] =
+  def boundedInt(bounds: Bounds[Int]): Schema[Int] =
     SInt(Some("int32"), bounds).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedLong(bounds: Bounds): Schema[Long] =
+  def boundedLong(bounds: Bounds[Long]): Schema[Long] =
     SInt(Some("int64"), bounds).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedDouble(bounds: Bounds): Schema[Double] =
+  def boundedDouble(bounds: Bounds[Double]): Schema[Double] =
     SNum(Some("double"), bounds).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
-  def boundedBigInt(bounds: Bounds): Schema[BigInt] =
+  def boundedBigInt(bounds: Bounds[BigInt]): Schema[BigInt] =
     SInt(None, bounds).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
 
-  def boundedFloat(bounds: Bounds): Schema[Float] =
+  def boundedFloat(bounds: Bounds[Float]): Schema[Float] =
     SNum(Some("float"), bounds).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
 
   def fields[R](p: FreeApplicative[Field[R, *], R]): Schema[R] = Record(p)
@@ -202,11 +203,11 @@ object Schema {
       }
   }
 
-  implicit val int: Schema[Int] = boundedInt(Bounds.NO)
-  implicit val long: Schema[Long] = boundedLong(Bounds.NO)
-  implicit val bigInt: Schema[BigInt] = boundedBigInt(Bounds.NO)
-  implicit val double: Schema[Double] = boundedDouble(Bounds.NO)
-  implicit val float: Schema[Float] = boundedFloat(Bounds.NO)
+  implicit val int: Schema[Int] = boundedInt(Bounds.empty)
+  implicit val long: Schema[Long] = boundedLong(Bounds.empty)
+  implicit val bigInt: Schema[BigInt] = boundedBigInt(Bounds.empty)
+  implicit val double: Schema[Double] = boundedDouble(Bounds.empty)
+  implicit val float: Schema[Float] = boundedFloat(Bounds.empty)
 
   implicit val stringInstance: Schema[String] = string()
   implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
@@ -249,8 +250,10 @@ object Schema {
 }
 
 object structure {
-  final case class SInt(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
-  final case class SNum(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
+  @nowarn
+  final case class SInt[A: Integral](format: Option[String], bounds: Bounds[A]) extends Schema[JsonNumber]
+  @nowarn
+  final case class SNum[A: Fractional](format: Option[String], bounds: Bounds[A]) extends Schema[JsonNumber]
   case object SBool extends Schema[Boolean]
   final case class Str(
       format: Option[String] = None,
