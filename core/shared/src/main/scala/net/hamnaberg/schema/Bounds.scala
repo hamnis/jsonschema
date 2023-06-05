@@ -6,45 +6,39 @@
 
 package net.hamnaberg.schema
 
-final case class Bounds(min: Option[Bound], max: Option[Bound]) {
-  def isWithin(value: BigDecimal): Boolean = {
-    val lower = min match {
-      case None => true
-      case Some(Bound.Inclusive(_min)) => value >= _min
-      case Some(Bound.Exclusive(_min)) => value > _min
+import scala.annotation.nowarn
+
+@nowarn
+final case class Bounds[A: Numeric](min: Option[Bound[A]], max: Option[Bound[A]]) {
+  private[schema] def isWithin(value: BigDecimal): Boolean = {
+    val lower = min.forall {
+      case i: Bound.Inclusive[A] => value >= i.toBigDecimal
+      case e: Bound.Exclusive[A] => value > e.toBigDecimal
     }
-    val upper = max match {
-      case None => true
-      case Some(Bound.Inclusive(_max)) => value <= _max
-      case Some(Bound.Exclusive(_max)) => value < _max
+    val upper = max.forall {
+      case i: Bound.Inclusive[A] => value <= i.toBigDecimal
+      case e: Bound.Exclusive[A] => value < e.toBigDecimal
     }
     upper && lower
   }
 }
 
 object Bounds {
-  val NO: Bounds = Bounds(None, None)
+  def empty[A: Numeric]: Bounds[A] = Bounds(None, None)
 
-  def both(min: Bound, max: Bound): Bounds = apply(Some(min), Some(max))
+  def both[A: Numeric](min: Bound[A], max: Bound[A]): Bounds[A] = apply(Some(min), Some(max))
 
-  def min(min: Bound) = Bounds(Some(min), None)
-  def max(max: Bound) = Bounds(None, Some(max))
+  def min[A: Numeric](min: Bound[A]): Bounds[A] = Bounds(Some(min), None)
+  def max[A: Numeric](max: Bound[A]): Bounds[A] = Bounds(None, Some(max))
 }
 
-sealed trait Bound
-
-sealed trait BoundCompanion[A] {
-  def apply(value: BigDecimal): A
-  def fromInt(value: Int): A = apply(BigDecimal(value))
-  def fromLong(value: Long): A = apply(BigDecimal(value))
-  def fromBigInt(value: Long): A = apply(BigDecimal(value))
-  def fromDouble(value: Double): A = apply(BigDecimal(value.toString))
-  def fromFloat(value: Float): A = apply(BigDecimal(value.toString))
+sealed trait Bound[A] {
+  def value: A
+  private[schema] def toBigDecimal: BigDecimal = BigDecimal(value.toString)
 }
-
 object Bound {
-  final case class Inclusive(value: BigDecimal) extends Bound
-  object Inclusive extends BoundCompanion[Inclusive]
-  final case class Exclusive(value: BigDecimal) extends Bound
-  object Exclusive extends BoundCompanion[Exclusive]
+  @nowarn
+  final case class Inclusive[A: Numeric](value: A) extends Bound[A]
+  @nowarn
+  final case class Exclusive[A: Numeric](value: A) extends Bound[A]
 }

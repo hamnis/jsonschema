@@ -26,7 +26,7 @@ object decoding {
         Decoder.decodeJsonNumber
       case SBool =>
         Decoder.decodeBoolean
-      case Str(_) =>
+      case Str(_, _, _, _) =>
         Decoder.decodeString
       case Enumeration(allowed) =>
         Decoder.decodeString.ensure(e => if (allowed.contains(e)) Nil else List(s"$e, not in $allowed"))

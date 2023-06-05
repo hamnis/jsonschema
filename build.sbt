@@ -38,5 +38,8 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
       "org.scalameta" %%% "munit" % "0.7.29" % Test
     )
   )
+  .jvmSettings(
+    libraryDependencies += "org.jruby.joni" % "joni" % "2.1.48"
+  )
 
 lazy val root = tlCrossRootProject.aggregate(core)

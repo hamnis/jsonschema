@@ -19,10 +19,10 @@ class JsonSchemaRenderingTest extends FunSuite with ResourcePlatform {
   test("schema1") {
     val schema = Schema
       .record[Coordinate] { field =>
-        val field1 = field("latitude", _.latitude)(
-          Schema.boundedDouble(Bounds.both(Bound.Inclusive.fromInt(-90), Bound.Inclusive.fromInt(90))))
+        val field1 =
+          field("latitude", _.latitude)(Schema.boundedDouble(Bounds.both(Bound.Inclusive(-90), Bound.Inclusive(90))))
         val field2 = field("longitude", _.longitude)(
-          Schema.boundedDouble(Bounds.both(Bound.Inclusive.fromInt(-180), Bound.Inclusive.fromInt(180))))
+          Schema.boundedDouble(Bounds.both(Bound.Inclusive(-180), Bound.Inclusive(180))))
         (field1, field2).mapN(Coordinate.apply)
       }
       .withDescription("A geographical coordinate.")

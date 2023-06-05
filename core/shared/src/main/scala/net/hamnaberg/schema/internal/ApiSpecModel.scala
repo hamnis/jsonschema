@@ -29,8 +29,15 @@ object ApiSpecModel {
         boundsSchema(baseSchema, bounds)
       case SBool =>
         TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
-      case Str(format) =>
-        TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false), format = format)
+      case Str(format, min, max, pattern) =>
+        TapirSchema(
+          `type` = Some(SchemaType.String),
+          nullable = Some(false),
+          format = format,
+          minLength = min,
+          maxLength = max,
+          pattern = pattern
+        )
       case Enumeration(allowed) =>
         TapirSchema(
           `type` = Some(SchemaType.String),
@@ -83,20 +90,20 @@ object ApiSpecModel {
     )
   }
 
-  private def boundsSchema(schema: TapirSchema, valid: Bounds) = {
+  private def boundsSchema[A](schema: TapirSchema, valid: Bounds[A]) = {
     val minUpdated = valid.min match {
       case None => schema
-      case Some(Bound.Inclusive(value)) =>
-        schema.copy(minimum = Some(value))
-      case Some(Bound.Exclusive(value)) =>
-        schema.copy(minimum = Some(value), exclusiveMinimum = Some(true))
+      case Some(i: Bound.Inclusive[A]) =>
+        schema.copy(minimum = Some(i.toBigDecimal))
+      case Some(e: Bound.Exclusive[A]) =>
+        schema.copy(minimum = Some(e.toBigDecimal), exclusiveMinimum = Some(true))
     }
     valid.max match {
       case None => schema
-      case Some(Bound.Inclusive(value)) =>
-        minUpdated.copy(maximum = Some(value))
-      case Some(Bound.Exclusive(value)) =>
-        minUpdated.copy(maximum = Some(value), exclusiveMaximum = Some(true))
+      case Some(i: Bound.Inclusive[A]) =>
+        minUpdated.copy(maximum = Some(i.toBigDecimal))
+      case Some(e: Bound.Exclusive[A]) =>
+        minUpdated.copy(maximum = Some(e.toBigDecimal), exclusiveMaximum = Some(true))
     }
   }
 }

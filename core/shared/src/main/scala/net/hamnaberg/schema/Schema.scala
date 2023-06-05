@@ -12,12 +12,13 @@ import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{ExampleSingleValue, Reference, ReferenceOr, Schema => ApiSpecSchema}
+import sttp.apispec.{ExampleSingleValue, Pattern, Reference, ReferenceOr, Schema => ApiSpecSchema}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
 import java.util.UUID
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.util.Try
 
@@ -46,7 +47,7 @@ sealed trait Schema[A] extends Product with Serializable { self =>
       reference: Option[Reference] = None,
       min: Option[Int] = None,
       max: Option[Int] = None): Schema[immutable.Seq[A]] =
-    asList(reference, min, max).imap(_.toSeq: immutable.Seq[A])(_.toList)
+    asList(reference, min, max).imap[immutable.Seq[A]](x => x)(_.toList)
 
   def reference(ref: Reference): Schema[A] = Custom(Left(ref), encoder, decoder)
 
@@ -114,19 +115,19 @@ object Schema {
 
   def apply[A](implicit S: Schema[A]) = S
 
-  def boundedInt(bounds: Bounds): Schema[Int] =
+  def boundedInt(bounds: Bounds[Int]): Schema[Int] =
     SInt(Some("int32"), bounds).xmap(_.toInt.toRight(DecodingFailure("Invalid int", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedLong(bounds: Bounds): Schema[Long] =
+  def boundedLong(bounds: Bounds[Long]): Schema[Long] =
     SInt(Some("int64"), bounds).xmap(_.toLong.toRight(DecodingFailure("Invalid long", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
-  def boundedDouble(bounds: Bounds): Schema[Double] =
+  def boundedDouble(bounds: Bounds[Double]): Schema[Double] =
     SNum(Some("double"), bounds).xmap(_.toDouble.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
-  def boundedBigInt(bounds: Bounds): Schema[BigInt] =
+  def boundedBigInt(bounds: Bounds[BigInt]): Schema[BigInt] =
     SInt(None, bounds).xmap(_.toBigInt.toRight(DecodingFailure("Invalid bigint", Nil)))(i =>
       JsonNumber.fromIntegralStringUnsafe(i.toString))
 
-  def boundedFloat(bounds: Bounds): Schema[Float] =
+  def boundedFloat(bounds: Bounds[Float]): Schema[Float] =
     SNum(Some("float"), bounds).xmap(_.toFloat.asRight)(i => JsonNumber.fromDecimalStringUnsafe(i.toString))
 
   def fields[R](p: FreeApplicative[Field[R, *], R]): Schema[R] = Record(p)
@@ -146,8 +147,16 @@ object Schema {
   def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
     alternatives(b(alt))
 
+  //TODO: According to https://json-schema.org/draft/2020-12/json-schema-validation.html#section-6.1.2
+  //this can be any type
   def enumeration(options: List[String]) =
     Enumeration(options)
+  def string[A](
+      format: Option[String] = None,
+      minLength: Option[Int] = None,
+      maxLength: Option[Int] = None,
+      pattern: Option[Pattern] = None
+  ): Schema[String] = Str(format, minLength, maxLength, pattern)
 
   def field[R] = new FieldBuilder[R]
   def alt[R] = new AltBuilder[R]
@@ -194,14 +203,13 @@ object Schema {
       }
   }
 
-  implicit val int: Schema[Int] = boundedInt(Bounds.NO)
-  implicit val long: Schema[Long] = boundedLong(Bounds.NO)
-  implicit val bigInt: Schema[BigInt] = boundedBigInt(Bounds.NO)
-  implicit val double: Schema[Double] = boundedDouble(Bounds.NO)
-  implicit val float: Schema[Float] = boundedFloat(Bounds.NO)
+  implicit val int: Schema[Int] = boundedInt(Bounds.empty)
+  implicit val long: Schema[Long] = boundedLong(Bounds.empty)
+  implicit val bigInt: Schema[BigInt] = boundedBigInt(Bounds.empty)
+  implicit val double: Schema[Double] = boundedDouble(Bounds.empty)
+  implicit val float: Schema[Float] = boundedFloat(Bounds.empty)
 
-  implicit val stringInstance: Schema[String] = string
-  def string[A]: Schema[String] = Str(None)
+  implicit val stringInstance: Schema[String] = string()
   implicit val uuid: Schema[UUID] = Str(Some("uuid")).xmap(s =>
     Try(UUID.fromString(s)).toEither.leftMap(m =>
       DecodingFailure(Option(m.getMessage).getOrElse("Not a valid UUID"), Nil)))(_.toString)
@@ -236,16 +244,23 @@ object Schema {
         DecodingFailure(Option(m.getMessage).getOrElse(s"Does not parse from ${formatter.toFormat}"), Nil)))(b =>
       formatter.format(b))
 
-  implicit def vector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector()
-  implicit def list[A](implicit s: Schema[A]): Schema[List[A]] = s.asList()
-  implicit def seq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq()
+  implicit def unboundedVector[A](implicit s: Schema[A]): Schema[Vector[A]] = s.asVector()
+  implicit def unboundedList[A](implicit s: Schema[A]): Schema[List[A]] = s.asList()
+  implicit def unboundedSeq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq()
 }
 
 object structure {
-  final case class SInt(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
-  final case class SNum(format: Option[String], bounds: Bounds) extends Schema[JsonNumber]
+  @nowarn
+  final case class SInt[A: Integral](format: Option[String], bounds: Bounds[A]) extends Schema[JsonNumber]
+  @nowarn
+  final case class SNum[A: Fractional](format: Option[String], bounds: Bounds[A]) extends Schema[JsonNumber]
   case object SBool extends Schema[Boolean]
-  final case class Str(format: Option[String] = None) extends Schema[String]
+  final case class Str(
+      format: Option[String] = None,
+      minLength: Option[Int] = None,
+      maxLength: Option[Int] = None,
+      pattern: Option[Pattern] = None
+  ) extends Schema[String]
   final case class Sequence[A](
       value: Schema[A],
       reference: Option[Reference] = None,
@@ -255,6 +270,7 @@ object structure {
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   final case class Isos[A](value: XMap[A]) extends Schema[A]
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
+  //todo: enums may be of any type
   final case class Enumeration(allowed: List[String]) extends Schema[String]
   final case class AllOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class AnyOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
