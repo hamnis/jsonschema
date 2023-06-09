@@ -12,7 +12,15 @@ import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{ExampleSingleValue, Pattern, Reference, ReferenceOr, Schema => ApiSpecSchema}
+import sttp.apispec.{
+  AnySchema,
+  ExampleSingleValue,
+  Pattern,
+  Reference,
+  ReferenceOr,
+  SchemaLike,
+  Schema => ApiSpecSchema
+}
 
 import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -25,7 +33,7 @@ import scala.util.Try
 sealed trait Schema[A] extends Product with Serializable { self =>
   import structure._
 
-  def compiled: ApiSpecSchema = compiled_.value
+  def compiled: SchemaLike = compiled_.value
   def decoder: Decoder[A] = decoder_.value
   def encoder: Encoder[A] = encoder_.value
 
@@ -98,7 +106,7 @@ sealed trait Schema[A] extends Product with Serializable { self =>
       }
     }
 
-  val compiled_ : Eval[ApiSpecSchema] = Eval.later(
+  val compiled_ : Eval[SchemaLike] = Eval.later(
     internal.ApiSpecModel.schemaFor(this)
   )
 
@@ -214,6 +222,8 @@ object Schema {
     Try(UUID.fromString(s)).toEither.leftMap(m =>
       DecodingFailure(Option(m.getMessage).getOrElse("Not a valid UUID"), Nil)))(_.toString)
 
+  implicit val anything: Schema[Json] = Custom(Right(AnySchema.Anything), Encoder[Json], Decoder[Json])
+
   implicit val instant: Schema[Instant] =
     _dateFormat(DateTimeFormatter.ISO_INSTANT, "date-time", (s, _) => Instant.parse(s))
 
@@ -275,7 +285,7 @@ object structure {
   final case class AllOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class AnyOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
-  final case class Custom[A](_compiled: ReferenceOr[ApiSpecSchema], _encoder: Encoder[A], _decoder: Decoder[A])
+  final case class Custom[A](_compiled: ReferenceOr[SchemaLike], _encoder: Encoder[A], _decoder: Decoder[A])
       extends Schema[A]
   final case class Meta[A](
       schema: Schema[A],
