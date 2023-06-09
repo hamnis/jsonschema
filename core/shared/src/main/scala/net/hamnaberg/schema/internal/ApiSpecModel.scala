@@ -82,9 +82,9 @@ object ApiSpecModel {
 
     TapirSchema(
       `type` = Some(SchemaType.Object),
-      properties = ListMap.from(value.map { case (name, schema) =>
+      properties = ListMap(value.map { case (name, schema) =>
         (name, schema.asRight[Reference])
-      }),
+      }: _*),
       required = required,
       nullable = Some(false)
     )
