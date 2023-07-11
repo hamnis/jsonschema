@@ -22,7 +22,7 @@ import sttp.apispec.{
   Schema => ApiSpecSchema
 }
 
-import java.time.{Instant, LocalDate, OffsetDateTime, ZonedDateTime}
+import java.time.{Duration, Instant, LocalDate, LocalTime, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
 import java.util.UUID
@@ -244,6 +244,17 @@ object Schema {
     "date",
     (s, format) => LocalDate.parse(s, format)
   )
+
+  implicit val localTime: Schema[LocalTime] = _dateFormat(
+    DateTimeFormatter.ISO_LOCAL_TIME,
+    "time",
+    (s, format) => LocalTime.parse(s, format)
+  )
+
+  implicit val duration: Schema[Duration] =
+    Str(Some("duration")).xmap(s =>
+      Try(Duration.parse(s)).toEither.leftMap(m =>
+        DecodingFailure(Option(m.getMessage).getOrElse(s"Unable to parse $s"), Nil)))(_.toString)
 
   def _dateFormat[A <: TemporalAccessor](
       formatter: DateTimeFormatter,
