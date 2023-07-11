@@ -17,7 +17,7 @@ inThisBuild(
 
 val circeVersion = "0.14.5"
 
-val sttpModelVersion = "0.4.0"
+val sttpModelVersion = "0.5.3"
 
 val catsVersion = "2.9.0"
 
@@ -34,12 +34,14 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-jawn" % circeVersion,
       "org.typelevel" %%% "cats-core" % catsVersion,
       "org.typelevel" %%% "cats-free" % catsVersion,
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0",
       "org.scalameta" %%% "munit" % "0.7.29" % Test
     )
   )
   .jvmSettings(
     libraryDependencies += "org.jruby.joni" % "joni" % "2.1.48"
+  )
+  .jsSettings(
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
   )
 
 lazy val root = tlCrossRootProject.aggregate(core)
