@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Plug",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "styling": {
+      "type": "string"
+    },
+    "index": {
+      "type": "integer",
+      "format": "int32",
+      "minimum": "1"
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "type": "string"
+        },
+        "source": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ]
+    }
+  },
+  "required": [
+    "title",
+    "styling",
+    "index"
+  ]
+}
