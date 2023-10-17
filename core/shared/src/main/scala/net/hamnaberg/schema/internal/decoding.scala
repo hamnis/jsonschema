@@ -18,6 +18,8 @@ object decoding {
 
   def fromSchema[A](schema2: Schema[A]): Decoder[A] =
     schema2 match {
+      case Reference(_, schema) =>
+        fromSchema(schema)
       case Meta(s, _, _, _) =>
         fromSchema(s)
       case SInt(_, _) =>
@@ -30,7 +32,7 @@ object decoding {
         Decoder.decodeString
       case Enumeration(allowed) =>
         Decoder.decodeString.ensure(e => if (allowed.contains(e)) Nil else List(s"$e, not in $allowed"))
-      case Sequence(value, _, _, _) =>
+      case Sequence(value, _, _) =>
         decodeList(value)
       case Record(record) =>
         decodeRecord(record)

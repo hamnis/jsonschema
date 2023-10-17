@@ -10,7 +10,7 @@ import io.circe.{CursorOp, Decoder, Encoder, Json}
 import io.circe.syntax._
 import cats.syntax.all._
 import munit.FunSuite
-import sttp.apispec.{ReferenceOr, SchemaType, Schema => TapirSchema}
+import sttp.apispec.{SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 
@@ -28,9 +28,9 @@ class PersonSchemaTest extends FunSuite {
   test("person can generate Schema") {
     val expected: TapirSchema = TapirSchema(
       `type` = Some(SchemaType.Object),
-      properties = ListMap[String, ReferenceOr[TapirSchema]](
-        "name" -> TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false)).asRight,
-        "age" -> TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = Some("int32")).asRight
+      properties = ListMap[String, TapirSchema](
+        "name" -> TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false)),
+        "age" -> TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = Some("int32"))
       ),
       nullable = Some(false),
       required = List("name", "age")

@@ -11,16 +11,9 @@ import cats.data.{Chain, NonEmptyChain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
+import net.hamnaberg.schema.Schema.record
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{
-  AnySchema,
-  ExampleSingleValue,
-  Pattern,
-  Reference,
-  ReferenceOr,
-  SchemaLike,
-  Schema => ApiSpecSchema
-}
+import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, SchemaLike, Schema => ApiSpecSchema}
 
 import java.time.{Duration, Instant, LocalDate, LocalTime, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -28,6 +21,7 @@ import java.time.temporal.TemporalAccessor
 import java.util.UUID
 import scala.annotation.nowarn
 import scala.collection.immutable
+import scala.collection.immutable.ListMap
 import scala.util.Try
 
 sealed trait Schema[A] extends Product with Serializable { self =>
@@ -44,23 +38,17 @@ sealed trait Schema[A] extends Product with Serializable { self =>
     .eval(this, json, Nil)
     .andThen(decode(_).fold(err => ValidationError(err.message, err.history).invalidNel, _.validNel))
 
-  def asList(reference: Option[Reference] = None, min: Option[Int] = None, max: Option[Int] = None): Schema[List[A]] =
-    Sequence(this, reference, min, max)
-  def asVector(
-      reference: Option[Reference] = None,
-      min: Option[Int] = None,
-      max: Option[Int] = None): Schema[Vector[A]] =
-    asList(reference, min, max).imap(_.toVector)(_.toList)
-  def asSeq(
-      reference: Option[Reference] = None,
-      min: Option[Int] = None,
-      max: Option[Int] = None): Schema[immutable.Seq[A]] =
-    asList(reference, min, max).imap[immutable.Seq[A]](x => x)(_.toList)
+  def asList(min: Option[Int] = None, max: Option[Int] = None): Schema[List[A]] =
+    Sequence(this, min, max)
+  def asVector(min: Option[Int] = None, max: Option[Int] = None): Schema[Vector[A]] =
+    asList(min, max).imap(_.toVector)(_.toList)
+  def asSeq(min: Option[Int] = None, max: Option[Int] = None): Schema[immutable.Seq[A]] =
+    asList(min, max).imap[immutable.Seq[A]](x => x)(_.toList)
 
-  def reference(ref: Reference): Schema[A] = Custom(Left(ref), encoder, decoder)
+  def reference(ref: String): Schema[A] = Reference(ref, this)
 
-  def at(field: String, ref: Option[Reference] = None): Schema[A] =
-    Schema.record[A](_(field, identity)(ref.map(this.reference).getOrElse(this)))
+  def at(field: String): Schema[A] =
+    Schema.record[A](_(field, identity)(this))
 
   def withDescription(description: String) =
     this match {
@@ -146,7 +134,7 @@ object Schema {
   def defer[A](schema: => Schema[A]): Schema[A] = Defer(() => schema)
 
   def custom[A](schema: ApiSpecSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
-    Custom(Right(schema), encoder, decoder)
+    Custom(schema, encoder, decoder)
 
   def allOf[A](schemas: NonEmptyChain[Schema[A]], schema: Option[Schema[A]]): Schema[A] = AllOf(schemas, schema)
   def anyOf[A](schemas: NonEmptyChain[Schema[A]], schema: Option[Schema[A]]): Schema[A] = AnyOf(schemas, schema)
@@ -222,7 +210,7 @@ object Schema {
     Try(UUID.fromString(s)).toEither.leftMap(m =>
       DecodingFailure(Option(m.getMessage).getOrElse("Not a valid UUID"), Nil)))(_.toString)
 
-  implicit val anything: Schema[Json] = Custom(Right(AnySchema.Anything), Encoder[Json], Decoder[Json])
+  implicit val anything: Schema[Json] = Custom(AnySchema.Anything, Encoder[Json], Decoder[Json])
 
   implicit val instant: Schema[Instant] =
     _dateFormat(DateTimeFormatter.ISO_INSTANT, "date-time", (s, _) => Instant.parse(s))
@@ -271,6 +259,13 @@ object Schema {
 }
 
 object structure {
+  final case class LocalDefinitions(value: ListMap[String, Schema[_]]) {
+    def get(name: String): Option[Schema[_]] = value.get(name)
+  }
+  object LocalDefinitions {
+    val empty = LocalDefinitions(ListMap.empty)
+  }
+
   @nowarn
   final case class SInt[A: Integral](format: Option[String], bounds: Bounds[A]) extends Schema[JsonNumber]
   @nowarn
@@ -282,11 +277,8 @@ object structure {
       maxLength: Option[Int] = None,
       pattern: Option[Pattern] = None
   ) extends Schema[String]
-  final case class Sequence[A](
-      value: Schema[A],
-      reference: Option[Reference] = None,
-      min: Option[Int] = None,
-      max: Option[Int] = None)
+  final case class Reference[A](ref: String, schema: Schema[A]) extends Schema[A]
+  final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
       extends Schema[List[A]]
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   final case class Isos[A](value: XMap[A]) extends Schema[A]
@@ -296,8 +288,7 @@ object structure {
   final case class AllOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class AnyOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class Sum[A](value: Chain[Alt[A]]) extends Schema[A]
-  final case class Custom[A](_compiled: ReferenceOr[SchemaLike], _encoder: Encoder[A], _decoder: Decoder[A])
-      extends Schema[A]
+  final case class Custom[A](_compiled: SchemaLike, _encoder: Encoder[A], _decoder: Decoder[A]) extends Schema[A]
   final case class Meta[A](
       schema: Schema[A],
       metaSchema: Option[String],

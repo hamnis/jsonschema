@@ -18,6 +18,8 @@ object encoding {
   import structure._
 
   def fromSchema[A](schema: Schema[A]): Encoder[A] = schema match {
+    case Reference(_, schema) =>
+      fromSchema(schema)
     case Meta(s, _, _, _) =>
       fromSchema(s)
     case SInt(_, _) =>
@@ -30,7 +32,7 @@ object encoding {
       Encoder.encodeString
     case Enumeration(_) =>
       Encoder.encodeString
-    case Sequence(value, _, _, _) =>
+    case Sequence(value, _, _) =>
       encodeList(value)
     case Record(rec) =>
       Encoder.instance(encodeObject(rec).andThen(_.asJson))

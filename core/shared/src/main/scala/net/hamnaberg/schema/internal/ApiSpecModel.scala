@@ -10,7 +10,7 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.apispec.{ExampleSingleValue, Reference, SchemaType, Schema => TapirSchema}
+import sttp.apispec.{ExampleSingleValue, SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 
@@ -19,6 +19,7 @@ object ApiSpecModel {
 
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
+      case Reference(ref, _) => TapirSchema($ref = Some(ref))
       case Meta(internal, meta, description, title) =>
         schemaFor(internal).copy($schema = meta, description = description, title = title)
       case SInt(format, bounds) =>
@@ -43,11 +44,11 @@ object ApiSpecModel {
           `type` = Some(SchemaType.String),
           nullable = Some(false),
           `enum` = Some(allowed.map(ExampleSingleValue(_))))
-      case Sequence(value, reference, min, max) =>
+      case Sequence(value, min, max) =>
         TapirSchema(
           `type` = Some(SchemaType.Array),
           nullable = Some(false),
-          items = Some(reference.toLeft(schemaFor(value))),
+          items = Some(schemaFor(value)),
           minItems = min,
           maxItems = max
         )
@@ -56,12 +57,12 @@ object ApiSpecModel {
       case Defer(f) => schemaFor(f())
       case Custom(schema, _, _) => TapirSchema(allOf = List(schema))
       case Sum(alts) =>
-        TapirSchema(oneOf = alts.map(c => Right(schemaFor(c.caseSchema))).toList)
+        TapirSchema(oneOf = alts.map(c => schemaFor(c.caseSchema)).toList)
       case AllOf(schemas, sOpt) =>
-        val allOf = TapirSchema(allOf = schemas.map(c => Right(schemaFor(c))).toList)
+        val allOf = TapirSchema(allOf = schemas.map(c => schemaFor(c)).toList)
         sOpt.map(s => schemaFor(s).copy(allOf = allOf.allOf)).getOrElse(allOf)
       case AnyOf(schemas, sOpt) =>
-        val any = TapirSchema(anyOf = schemas.map(c => Right(schemaFor(c))).toList)
+        val any = TapirSchema(anyOf = schemas.map(c => schemaFor(c)).toList)
         sOpt.map(s => schemaFor(s).copy(anyOf = any.anyOf)).getOrElse(any)
     }
 
@@ -82,9 +83,7 @@ object ApiSpecModel {
 
     TapirSchema(
       `type` = Some(SchemaType.Object),
-      properties = ListMap(value.map { case (name, schema) =>
-        (name, schema.asRight[Reference])
-      }: _*),
+      properties = ListMap(value: _*),
       required = required,
       nullable = Some(false)
     )

@@ -4,7 +4,7 @@ inThisBuild(
     startYear := Some(2021),
     organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.12.18", "2.13.11", "3.3.0"),
+    crossScalaVersions := Seq("2.12.18", "2.13.11", "3.3.1"),
     scalaVersion := crossScalaVersions.value.head,
     ThisBuild / licenses := Seq(License.Apache2),
     developers := List(
@@ -17,7 +17,7 @@ inThisBuild(
 
 val circeVersion = "0.14.6"
 
-val sttpModelVersion = "0.6.0"
+val sttpModelVersion = "0.7.1"
 
 val catsVersion = "2.10.0"
 

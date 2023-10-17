@@ -17,6 +17,7 @@ import net.hamnaberg.schema.{Schema, ValidationError, structure}
 object validation extends StringValidationPlatform {
   def eval[A](schema: Schema[A], json: Json, history: List[CursorOp]): ValidatedNel[ValidationError, Json] =
     schema match {
+      case structure.Reference(_, s) => eval(s, json, history)
       case structure.Meta(s, _, _, _) => eval(s, json, history)
       case structure.SInt(Some("int32"), bounds) =>
         val error = ValidationError("Not a valid int", history)
@@ -97,7 +98,7 @@ object validation extends StringValidationPlatform {
               .toValidNel[ValidationError](error)
               .andThen(s => validate(s))
           }
-      case structure.Sequence(elementSchema, _, min, max) =>
+      case structure.Sequence(elementSchema, min, max) =>
         val error = ValidationError("Not a valid array", history)
         json.asArray match {
           case Some(array) =>
