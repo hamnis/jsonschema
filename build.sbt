@@ -1,6 +1,6 @@
 inThisBuild(
   Seq(
-    tlBaseVersion := "0.4",
+    tlBaseVersion := "0.5",
     startYear := Some(2021),
     organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
