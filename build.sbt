@@ -59,8 +59,8 @@ lazy val codegen = crossProject(JVMPlatform, JSPlatform)
     crossScalaVersions := Seq(scala212, scala213),
     headerLicenseStyle := HeaderLicenseStyle.SpdxSyntax,
     libraryDependencies ++= Seq(
-      "org.scalameta" %% "scalameta" % "4.8.9",
-      "com.softwaremill.sttp.apispec" %% "jsonschema-circe" % "0.6.0",
+      "org.scalameta" %% "scalameta" % "4.8.12",
+      "com.softwaremill.sttp.apispec" %% "jsonschema-circe" % sttpModelVersion,
       "org.scalameta" %% "munit" % munitVersion % Test
     )
   )

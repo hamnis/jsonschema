@@ -51,7 +51,7 @@ object GenerateCaseClass {
     }
   }
 
-  private def propsFrom(schema: Schema) = schema.properties.collect { case (k, Right(v)) => PropertyName(k) -> v }
+  private def propsFrom(schema: Schema) = schema.properties.collect { case (k, v) => PropertyName(k) -> v }
 
   private def mapTypes(
       name: Type.Name,
@@ -243,7 +243,7 @@ object GenerateCaseClass {
       case SchemaType.Object =>
         Right(Type.Select(Term.Name(outerTypeName.value), Type.Name(name.field.toLowerCase.capitalize)))
       case SchemaType.Array =>
-        val item = schema.items.flatMap(_.toOption).getOrElse(AnySchema.Anything)
+        val item = schema.items.getOrElse(AnySchema.Anything)
         val itemType = item match {
           case AnySchema.Anything => Right(Type.Name("Json"))
           case AnySchema.Nothing => Left("Unsupported type Nothing")
