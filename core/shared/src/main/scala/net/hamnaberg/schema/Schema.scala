@@ -287,18 +287,22 @@ object Schema {
   implicit def unboundedSeq[A](implicit s: Schema[A]): Schema[immutable.Seq[A]] = s.asSeq()
 }
 
-object structure {
-  final case class LocalDefinitions(value: ListMap[String, Schema[Json]]) {
-    def get(name: String): Option[Schema[Json]] = value.get(name)
-    def isEmpty = value.isEmpty
-    def modify(f: ListMap[String, Schema[Json]] => ListMap[String, Schema[Json]]): LocalDefinitions = LocalDefinitions(
-      f(value))
-    def put(ref: String, schema: Schema[Json]): LocalDefinitions = modify(_ + (ref -> schema))
-  }
-  object LocalDefinitions {
-    val empty = LocalDefinitions(ListMap.empty)
-  }
+final case class LocalDefinitions(value: ListMap[String, Schema[Json]]) {
+  def get(name: String): Option[Schema[Json]] = value.get(name)
 
+  def isEmpty = value.isEmpty
+
+  def modify(f: ListMap[String, Schema[Json]] => ListMap[String, Schema[Json]]): LocalDefinitions = LocalDefinitions(
+    f(value))
+
+  def put(ref: String, schema: Schema[Json]): LocalDefinitions = modify(_ + (ref -> schema))
+}
+
+object LocalDefinitions {
+  val empty = LocalDefinitions(ListMap.empty)
+}
+
+object structure {
   @nowarn
   final case class SInt[A: Integral](format: Option[String], bounds: Bounds[A]) extends Schema[JsonNumber]
   @nowarn
