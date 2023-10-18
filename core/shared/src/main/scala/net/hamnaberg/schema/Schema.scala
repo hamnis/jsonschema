@@ -53,34 +53,50 @@ sealed trait Schema[A] extends Product with Serializable { self =>
 
   def withDescription(description: String) =
     this match {
-      case Meta(schema, meta, _, title, extensions) =>
-        Meta(schema, meta, Some(description), title, extensions)
+      case Meta(schema, meta, _, title, extensions, local) =>
+        Meta(schema, meta, Some(description), title, extensions, local)
       case other =>
-        Meta(other, None, Some(description), None, None)
+        Meta(other, None, Some(description), None, None, LocalDefinitions.empty)
     }
 
   def withTitle(title: String) =
     this match {
-      case Meta(schema, meta, desc, _, extensions) =>
-        Meta(schema, meta, desc, Some(title), extensions)
+      case Meta(schema, meta, desc, _, extensions, local) =>
+        Meta(schema, meta, desc, Some(title), extensions, local)
       case other =>
-        Meta(other, None, None, Some(title), None)
+        Meta(other, None, None, Some(title), None, LocalDefinitions.empty)
     }
 
   def withMetaSchema(metaSchema: String) =
     this match {
-      case Meta(schema, _, desc, title, extensions) =>
-        Meta(schema, Some(metaSchema), desc, title, extensions)
+      case Meta(schema, _, desc, title, extensions, local) =>
+        Meta(schema, Some(metaSchema), desc, title, extensions, local)
       case other =>
-        Meta(other, Some(metaSchema), None, None, None)
+        Meta(other, Some(metaSchema), None, None, None, LocalDefinitions.empty)
     }
 
   def withExtensions(json: JsonObject) =
     this match {
-      case Meta(schema, meta, desc, title, _) =>
-        Meta(schema, meta, desc, title, Some(json))
+      case Meta(schema, meta, desc, title, _, local) =>
+        Meta(schema, meta, desc, title, Some(json), local)
       case other =>
-        Meta(other, None, None, None, Some(json))
+        Meta(other, None, None, None, Some(json), LocalDefinitions.empty)
+    }
+
+  def withLocalDefinitions(definitions: LocalDefinitions) =
+    this match {
+      case Meta(schema, meta, desc, title, ext, _) =>
+        Meta(schema, meta, desc, title, ext, definitions)
+      case other =>
+        Meta(other, None, None, None, None, definitions)
+    }
+
+  def addLocalDefinition(ref: String, definition: Schema[Json]) =
+    this match {
+      case Meta(schema, meta, desc, title, ext, local) =>
+        Meta(schema, meta, desc, title, ext, local.put(ref, definition))
+      case other =>
+        Meta(other, None, None, None, None, LocalDefinitions(ListMap(ref -> definition)))
     }
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
@@ -272,8 +288,12 @@ object Schema {
 }
 
 object structure {
-  final case class LocalDefinitions(value: ListMap[String, Schema[_]]) {
-    def get(name: String): Option[Schema[_]] = value.get(name)
+  final case class LocalDefinitions(value: ListMap[String, Schema[Json]]) {
+    def get(name: String): Option[Schema[Json]] = value.get(name)
+    def isEmpty = value.isEmpty
+    def modify(f: ListMap[String, Schema[Json]] => ListMap[String, Schema[Json]]): LocalDefinitions = LocalDefinitions(
+      f(value))
+    def put(ref: String, schema: Schema[Json]): LocalDefinitions = modify(_ + (ref -> schema))
   }
   object LocalDefinitions {
     val empty = LocalDefinitions(ListMap.empty)
@@ -307,7 +327,8 @@ object structure {
       metaSchema: Option[String],
       description: Option[String],
       title: Option[String],
-      extensions: Option[JsonObject]
+      extensions: Option[JsonObject],
+      definitions: LocalDefinitions
   ) extends Schema[A]
 
   sealed trait Field[R, E] extends Product with Serializable {
