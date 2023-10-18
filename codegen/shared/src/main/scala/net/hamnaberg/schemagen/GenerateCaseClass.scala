@@ -16,19 +16,15 @@ import scala.meta._
 import scala.meta.dialects.Scala3
 
 case class CaseClass(cls: Defn.Class, companion: Defn.Object, imports: List[Importer]) {
-  def asSyntax(pkg: Option[String], dialect: Dialect = Scala3): String = {
-    val asPkg: Source = pkg
-      .map { p =>
-        val arr = p.split("\\.").toList
-        val packageTerm = arr.tail.foldLeft[Term.Ref](Term.Name(arr.head)) { case (ref, term) =>
-          Term.Select(ref, Term.Name(term))
-        }
-
-        Source(List(Pkg(packageTerm, imports.map(i => Import(List(i))) ++ List(cls, companion))))
+  def asSyntax(pkg: String, dialect: Dialect = Scala3): String = {
+    val asPkg: Source = {
+      val arr = pkg.split("\\.").toList
+      val packageTerm = arr.tail.foldLeft[Term.Ref](Term.Name(arr.head)) { case (ref, term) =>
+        Term.Select(ref, Term.Name(term))
       }
-      .getOrElse(
-        Source(imports.map(i => Import(List(i))) ++ List(cls, companion))
-      )
+
+      Source(List(Pkg(packageTerm, imports.map(i => Import(List(i))) ++ List(cls, companion))))
+    }
     scala.meta.internal.prettyprinters.TreeSyntax.apply[Source](dialect)(asPkg).toString()
   }
 

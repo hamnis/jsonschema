@@ -27,7 +27,7 @@ class GenerateCaseClassTest extends FunSuite {
       .flatMap(schema =>
         GenerateCaseClass.generate(schema, "Coordinate", ImportableType.allImports, ImportableType.defaultFormats))
     val result = cc.map { generated =>
-      generated.asSyntax(Some("foo.bar"))
+      generated.asSyntax("foo.bar")
     }
 
     assert(cc.isRight)
@@ -58,7 +58,7 @@ class GenerateCaseClassTest extends FunSuite {
       .flatMap(schema =>
         GenerateCaseClass.generate(schema, "Plug", ImportableType.allImports, ImportableType.defaultFormats))
     val result = cc.map { cls =>
-      cls.asSyntax(Some("bar"))
+      cls.asSyntax("bar")
     }
 
     assert(cc.isRight)
