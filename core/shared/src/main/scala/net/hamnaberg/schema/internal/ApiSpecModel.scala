@@ -10,7 +10,7 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.apispec.{ExampleSingleValue, SchemaType, Schema => TapirSchema}
+import sttp.apispec.{ExampleSingleValue, ExtensionValue, SchemaType, Schema => TapirSchema}
 
 import scala.collection.immutable.ListMap
 
@@ -19,9 +19,13 @@ object ApiSpecModel {
 
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
-      case Reference(ref, _) => TapirSchema($ref = Some(ref))
-      case Meta(internal, meta, description, title) =>
-        schemaFor(internal).copy($schema = meta, description = description, title = title)
+      case Reference(ref, s) => schemaFor(s).copy($ref = Some(ref))
+      case Meta(internal, meta, description, title, extensions) =>
+        val ext =
+          extensions
+            .map(json => ListMap(json.toVector.map { case (k, v) => k -> ExtensionValue(v.noSpaces) }: _*))
+            .getOrElse(ListMap.empty)
+        schemaFor(internal).copy($schema = meta, description = description, title = title, extensions = ext)
       case SInt(format, bounds) =>
         val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
         boundsSchema(baseSchema, bounds)

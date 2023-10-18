@@ -11,7 +11,6 @@ import cats.data.{Chain, NonEmptyChain, ValidatedNel}
 import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
-import net.hamnaberg.schema.Schema.record
 import net.hamnaberg.schema.internal.{encoding, validation}
 import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, SchemaLike, Schema => ApiSpecSchema}
 
@@ -45,33 +44,43 @@ sealed trait Schema[A] extends Product with Serializable { self =>
   def asSeq(min: Option[Int] = None, max: Option[Int] = None): Schema[immutable.Seq[A]] =
     asList(min, max).imap[immutable.Seq[A]](x => x)(_.toList)
 
-  def reference(ref: String): Schema[A] = Reference(ref, this)
+  def toAny: Schema[Json] = Custom(compiled, Encoder[Json], Decoder[Json])
+
+  def reference(ref: String): Schema[Json] = Reference(ref, this.toAny)
 
   def at(field: String): Schema[A] =
     Schema.record[A](_(field, identity)(this))
 
   def withDescription(description: String) =
     this match {
-      case Meta(schema, meta, _, title) =>
-        Meta(schema, meta, Some(description), title)
+      case Meta(schema, meta, _, title, extensions) =>
+        Meta(schema, meta, Some(description), title, extensions)
       case other =>
-        Meta(other, None, Some(description), None)
+        Meta(other, None, Some(description), None, None)
     }
 
   def withTitle(title: String) =
     this match {
-      case Meta(schema, meta, desc, _) =>
-        Meta(schema, meta, desc, Some(title))
+      case Meta(schema, meta, desc, _, extensions) =>
+        Meta(schema, meta, desc, Some(title), extensions)
       case other =>
-        Meta(other, None, None, Some(title))
+        Meta(other, None, None, Some(title), None)
     }
 
   def withMetaSchema(metaSchema: String) =
     this match {
-      case Meta(schema, _, desc, title) =>
-        Meta(schema, Some(metaSchema), desc, title)
+      case Meta(schema, _, desc, title, extensions) =>
+        Meta(schema, Some(metaSchema), desc, title, extensions)
       case other =>
-        Meta(other, Some(metaSchema), None, None)
+        Meta(other, Some(metaSchema), None, None, None)
+    }
+
+  def withExtensions(json: JsonObject) =
+    this match {
+      case Meta(schema, meta, desc, title, _) =>
+        Meta(schema, meta, desc, title, Some(json))
+      case other =>
+        Meta(other, None, None, None, Some(json))
     }
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
@@ -135,6 +144,10 @@ object Schema {
 
   def custom[A](schema: ApiSpecSchema, encoder: Encoder[A], decoder: Decoder[A]): Schema[A] =
     Custom(schema, encoder, decoder)
+
+  def reference(ref: String): Schema[Json] = Reference(ref, any)
+  def any: Schema[Json] =
+    Custom(AnySchema.Anything, Encoder[Json], Decoder[Json])
 
   def allOf[A](schemas: NonEmptyChain[Schema[A]], schema: Option[Schema[A]]): Schema[A] = AllOf(schemas, schema)
   def anyOf[A](schemas: NonEmptyChain[Schema[A]], schema: Option[Schema[A]]): Schema[A] = AnyOf(schemas, schema)
@@ -277,7 +290,7 @@ object structure {
       maxLength: Option[Int] = None,
       pattern: Option[Pattern] = None
   ) extends Schema[String]
-  final case class Reference[A](ref: String, schema: Schema[A]) extends Schema[A]
+  final case class Reference(ref: String, schema: Schema[Json]) extends Schema[Json]
   final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
       extends Schema[List[A]]
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
@@ -293,8 +306,9 @@ object structure {
       schema: Schema[A],
       metaSchema: Option[String],
       description: Option[String],
-      title: Option[String])
-      extends Schema[A]
+      title: Option[String],
+      extensions: Option[JsonObject]
+  ) extends Schema[A]
 
   sealed trait Field[R, E] extends Product with Serializable {
     private[schema] def decode(c: HCursor): Decoder.Result[E]

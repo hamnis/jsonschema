@@ -20,7 +20,7 @@ object encoding {
   def fromSchema[A](schema: Schema[A]): Encoder[A] = schema match {
     case Reference(_, schema) =>
       fromSchema(schema)
-    case Meta(s, _, _, _) =>
+    case Meta(s, _, _, _, _) =>
       fromSchema(s)
     case SInt(_, _) =>
       Encoder.encodeJsonNumber
