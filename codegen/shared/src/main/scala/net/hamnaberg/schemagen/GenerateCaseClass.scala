@@ -245,7 +245,7 @@ object GenerateCaseClass {
       case SchemaType.Array =>
         val item = schema.items.getOrElse(AnySchema.Anything)
         val itemType = item match {
-          case AnySchema.Anything => Right(Type.Name("Json"))
+          case AnySchema.Anything => Right(ImportableType.Json.typeName)
           case AnySchema.Nothing => Left("Unsupported type Nothing")
           case s: Schema =>
             s.`type`.toRight("No type defined").flatMap(t => getMetaType(outerTypeName, name, s, t, formats))
