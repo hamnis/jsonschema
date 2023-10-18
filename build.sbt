@@ -11,6 +11,7 @@ inThisBuild(
       tlGitHubDev("hamnis", "Erlend Hamnaberg")
     ),
     tlCiReleaseBranches := Nil,
+    tlJdkRelease := Some(11),
     githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
   )
 )

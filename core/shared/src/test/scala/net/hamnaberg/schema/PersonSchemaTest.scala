@@ -40,7 +40,7 @@ class PersonSchemaTest extends FunSuite {
     val decoder: Decoder[Person] = Person.schema.decoder
 
     val original = Person("erlend", 40)
-    val Right(decodedPerson) = decoder.decodeJson(encoder.apply(original))
+    val Right(decodedPerson) = decoder.decodeJson(encoder.apply(original)): @unchecked
     assertEquals(Person.schema.compiled, expected)
     assertEquals(decodedPerson, original)
   }
