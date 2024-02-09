@@ -20,8 +20,8 @@ object decoding {
     schema2 match {
       case Reference(_, schema) =>
         fromSchema(schema)
-      case Meta(s, _, _, _, _, _) =>
-        fromSchema(s)
+      case m: Meta[A] =>
+        fromSchema(m.schema)
       case SInt(_, _) =>
         Decoder.decodeJsonNumber
       case SNum(_, _) =>

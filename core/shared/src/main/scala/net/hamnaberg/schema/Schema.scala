@@ -53,50 +53,58 @@ sealed trait Schema[A] extends Product with Serializable { self =>
 
   def withDescription(description: String) =
     this match {
-      case Meta(schema, meta, _, title, extensions, local) =>
-        Meta(schema, meta, Some(description), title, extensions, local)
+      case Meta(schema, meta, _, title, deprecated, extensions, local) =>
+        Meta(schema, meta, Some(description), title, deprecated, extensions, local)
       case other =>
-        Meta(other, None, Some(description), None, None, LocalDefinitions.empty)
+        Meta(other, None, Some(description), None, None, None, LocalDefinitions.empty)
     }
 
   def withTitle(title: String) =
     this match {
-      case Meta(schema, meta, desc, _, extensions, local) =>
-        Meta(schema, meta, desc, Some(title), extensions, local)
+      case Meta(schema, meta, desc, _, deprecated, extensions, local) =>
+        Meta(schema, meta, desc, Some(title), deprecated, extensions, local)
       case other =>
-        Meta(other, None, None, Some(title), None, LocalDefinitions.empty)
+        Meta(other, None, None, Some(title), None, None, LocalDefinitions.empty)
     }
 
   def withMetaSchema(metaSchema: String) =
     this match {
-      case Meta(schema, _, desc, title, extensions, local) =>
-        Meta(schema, Some(metaSchema), desc, title, extensions, local)
+      case Meta(schema, _, desc, title, deprecated, extensions, local) =>
+        Meta(schema, Some(metaSchema), desc, title, deprecated, extensions, local)
       case other =>
-        Meta(other, Some(metaSchema), None, None, None, LocalDefinitions.empty)
+        Meta(other, Some(metaSchema), None, None, None, None, LocalDefinitions.empty)
+    }
+
+  def withDeprecated(deprecated: Boolean) =
+    this match {
+      case Meta(schema, meta, desc, title, _, extensions, local) =>
+        Meta(schema, meta, desc, title, Some(deprecated), extensions, local)
+      case other =>
+        Meta(other, None, None, None, Some(deprecated), None, LocalDefinitions.empty)
     }
 
   def withExtensions(json: JsonObject) =
     this match {
-      case Meta(schema, meta, desc, title, _, local) =>
-        Meta(schema, meta, desc, title, Some(json), local)
+      case Meta(schema, meta, desc, title, deprecated, _, local) =>
+        Meta(schema, meta, desc, title, deprecated, Some(json), local)
       case other =>
-        Meta(other, None, None, None, Some(json), LocalDefinitions.empty)
+        Meta(other, None, None, None, None, Some(json), LocalDefinitions.empty)
     }
 
   def withLocalDefinitions(definitions: LocalDefinitions) =
     this match {
-      case Meta(schema, meta, desc, title, ext, _) =>
-        Meta(schema, meta, desc, title, ext, definitions)
+      case Meta(schema, meta, desc, title, deprecated, ext, _) =>
+        Meta(schema, meta, desc, title, deprecated, ext, definitions)
       case other =>
-        Meta(other, None, None, None, None, definitions)
+        Meta(other, None, None, None, None, None, definitions)
     }
 
   def addLocalDefinition(ref: String, definition: Schema[Json]) =
     this match {
-      case Meta(schema, meta, desc, title, ext, local) =>
-        Meta(schema, meta, desc, title, ext, local.put(ref, definition))
+      case Meta(schema, meta, desc, title, deprecated, ext, local) =>
+        Meta(schema, meta, desc, title, deprecated, ext, local.put(ref, definition))
       case other =>
-        Meta(other, None, None, None, None, LocalDefinitions(ListMap(ref -> definition)))
+        Meta(other, None, None, None, None, None, LocalDefinitions(ListMap(ref -> definition)))
     }
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
@@ -331,6 +339,7 @@ object structure {
       metaSchema: Option[String],
       description: Option[String],
       title: Option[String],
+      deprecated: Option[Boolean],
       extensions: Option[JsonObject],
       definitions: LocalDefinitions
   ) extends Schema[A]

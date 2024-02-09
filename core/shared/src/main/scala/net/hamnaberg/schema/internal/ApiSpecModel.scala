@@ -20,7 +20,7 @@ object ApiSpecModel {
   def schemaFor[A](schema2: Schema[A]): TapirSchema =
     schema2 match {
       case Reference(ref, s) => schemaFor(s).copy($ref = Some(ref))
-      case Meta(internal, meta, description, title, extensions, definitions) =>
+      case Meta(internal, meta, description, title, deprecated, extensions, definitions) =>
         val ext =
           extensions
             .map(json => ListMap(json.toVector.map { case (k, v) => k -> ExtensionValue(v.noSpaces) }: _*))
@@ -31,7 +31,8 @@ object ApiSpecModel {
           description = description,
           title = title,
           extensions = ext,
-          $defs = defs
+          $defs = defs,
+          deprecated = deprecated
         )
       case SInt(format, bounds) =>
         val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
