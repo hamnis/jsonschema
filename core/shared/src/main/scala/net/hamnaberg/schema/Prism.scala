@@ -17,8 +17,7 @@ import scala.reflect.ClassTag
 final case class Prism[A, B](tryGet: A => Option[B], inject: B => A)
 object Prism extends LowPrioPrism {
 
-  /** Returns a new [[Prism]] instance using the specified
-    * `tryGet` partial function and `inject` function.
+  /** Returns a new [[Prism]] instance using the specified `tryGet` partial function and `inject` function.
     */
   def fromPartial[A, B](tryGet: PartialFunction[A, B])(inject: B => A) =
     Prism(tryGet.lift, inject)
@@ -59,12 +58,10 @@ object Prism extends LowPrioPrism {
 
 private[schema] sealed trait LowPrioPrism {
 
-  /** Returns a new [[Prism]] for the specified supertype
-    * and subtype.
+  /** Returns a new [[Prism]] for the specified supertype and subtype.
     *
-    * Relies on class tags. Since the function is implicit,
-    * [[Prism]]s are available implicitly for any supertype
-    * and subtype relationships.
+    * Relies on class tags. Since the function is implicit, [[Prism]]s are available implicitly for any supertype and
+    * subtype relationships.
     */
   implicit final def derive[S, A <: S](implicit
       tag: ClassTag[A]
@@ -74,7 +71,7 @@ private[schema] sealed trait LowPrioPrism {
         Some(s.asInstanceOf[A])
       else None
 
-    val inject = (a: A) => (a: S)
+    val inject = (a: A) => a: S
 
     Prism(tryGet, inject)
   }

@@ -39,7 +39,7 @@ object validation extends StringValidationPlatform {
         val error = ValidationError("Not a valid integer", history)
         val left = eval(Schema.int, json, history)
         val right = eval(Schema.long, json, history)
-        val bigint = {
+        val bigint =
           if (json.isNumber) {
             val num = json.asNumber
             num
@@ -50,7 +50,6 @@ object validation extends StringValidationPlatform {
           } else {
             error.invalidNel
           }
-        }
         left.orElse(right).orElse(bigint).as(json)
       case structure.SNum(_, bounds) =>
         val error = ValidationError("Not a valid numeric", history)
@@ -69,15 +68,14 @@ object validation extends StringValidationPlatform {
         if (json.isBoolean) json.validNel else error.invalidNel
       case structure.Str(format, min, max, pattern) =>
         val error = ValidationError("Not a valid string", history)
-        //todo: handle all known formats
+        // todo: handle all known formats
         def validate(s: String) = {
           val validMin =
             if (min.forall(length => s.length >= length)) s.validNel[ValidationError]
             else ValidationError(s"Too short string, expected minimum ${min.getOrElse(0)}", history).invalidNel
-          val validMax = {
+          val validMax =
             if (max.forall(length => s.length <= length)) s.validNel[ValidationError]
             else ValidationError(s"Too long string, expected maximum ${max.getOrElse(0)}", history).invalidNel
-          }
           val validPattern = pattern.map(p => validatePattern(s, p, history)).getOrElse(json.validNel)
           (validMin, validMax, validPattern).mapN((_, _, _) => json)
         }

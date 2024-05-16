@@ -10,7 +10,7 @@ import io.circe.{CursorOp, Decoder, Encoder, Json}
 import io.circe.syntax._
 import cats.syntax.all._
 import munit.FunSuite
-import sttp.apispec.{SchemaType, Schema => TapirSchema}
+import sttp.apispec.{Schema => TapirSchema, SchemaType}
 
 import scala.collection.immutable.ListMap
 

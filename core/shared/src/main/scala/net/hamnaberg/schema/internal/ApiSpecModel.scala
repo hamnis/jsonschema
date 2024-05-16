@@ -10,7 +10,7 @@ package internal
 import cats.free.FreeApplicative
 import cats._
 import cats.syntax.all._
-import sttp.apispec.{ExampleSingleValue, ExtensionValue, SchemaType, Schema => TapirSchema}
+import sttp.apispec.{ExampleSingleValue, ExtensionValue, Schema => TapirSchema, SchemaType}
 
 import scala.collection.immutable.ListMap
 
@@ -51,9 +51,7 @@ object ApiSpecModel {
           pattern = pattern
         )
       case Enumeration(allowed) =>
-        TapirSchema(
-          `type` = Some(List(SchemaType.String)),
-          `enum` = Some(allowed.map(ExampleSingleValue(_))))
+        TapirSchema(`type` = Some(List(SchemaType.String)), `enum` = Some(allowed.map(ExampleSingleValue(_))))
       case Sequence(value, min, max) =>
         TapirSchema(
           `type` = Some(List(SchemaType.Array)),
@@ -93,7 +91,7 @@ object ApiSpecModel {
     TapirSchema(
       `type` = Some(List(SchemaType.Object)),
       properties = ListMap(value: _*),
-      required = required,
+      required = required
     )
   }
 
