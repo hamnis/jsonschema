@@ -35,17 +35,16 @@ object ApiSpecModel {
           deprecated = deprecated
         )
       case SInt(format, bounds) =>
-        val baseSchema = TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = format)
+        val baseSchema = TapirSchema(`type` = Some(List(SchemaType.Integer)), format = format)
         boundsSchema(baseSchema, bounds)
       case SNum(format, bounds) =>
-        val baseSchema = TapirSchema(`type` = Some(SchemaType.Number), nullable = Some(false), format = format)
+        val baseSchema = TapirSchema(`type` = Some(List(SchemaType.Number)), format = format)
         boundsSchema(baseSchema, bounds)
       case SBool =>
-        TapirSchema(`type` = Some(SchemaType.Boolean), nullable = Some(false))
+        TapirSchema(`type` = Some(List(SchemaType.Boolean)))
       case Str(format, min, max, pattern) =>
         TapirSchema(
-          `type` = Some(SchemaType.String),
-          nullable = Some(false),
+          `type` = Some(List(SchemaType.String)),
           format = format,
           minLength = min,
           maxLength = max,
@@ -53,13 +52,11 @@ object ApiSpecModel {
         )
       case Enumeration(allowed) =>
         TapirSchema(
-          `type` = Some(SchemaType.String),
-          nullable = Some(false),
+          `type` = Some(List(SchemaType.String)),
           `enum` = Some(allowed.map(ExampleSingleValue(_))))
       case Sequence(value, min, max) =>
         TapirSchema(
-          `type` = Some(SchemaType.Array),
-          nullable = Some(false),
+          `type` = Some(List(SchemaType.Array)),
           items = Some(schemaFor(value)),
           minItems = min,
           maxItems = max
@@ -90,14 +87,13 @@ object ApiSpecModel {
         .getConst
 
     val required = value.collect {
-      case (n, compiled) if compiled.nullable.forall(!_) => n
+      case (n, compiled) if !compiled.`type`.getOrElse(Nil).contains(SchemaType.Null) => n
     }
 
     TapirSchema(
-      `type` = Some(SchemaType.Object),
+      `type` = Some(List(SchemaType.Object)),
       properties = ListMap(value: _*),
       required = required,
-      nullable = Some(false)
     )
   }
 
@@ -107,14 +103,14 @@ object ApiSpecModel {
       case Some(i: Bound.Inclusive[A]) =>
         schema.copy(minimum = Some(i.toBigDecimal))
       case Some(e: Bound.Exclusive[A]) =>
-        schema.copy(minimum = Some(e.toBigDecimal), exclusiveMinimum = Some(true))
+        schema.copy(exclusiveMinimum = Some(e.toBigDecimal))
     }
     valid.max match {
       case None => schema
       case Some(i: Bound.Inclusive[A]) =>
         minUpdated.copy(maximum = Some(i.toBigDecimal))
       case Some(e: Bound.Exclusive[A]) =>
-        minUpdated.copy(maximum = Some(e.toBigDecimal), exclusiveMaximum = Some(true))
+        minUpdated.copy(exclusiveMaximum = Some(e.toBigDecimal))
     }
   }
 }

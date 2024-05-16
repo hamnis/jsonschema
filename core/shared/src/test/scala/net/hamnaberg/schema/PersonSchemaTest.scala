@@ -27,12 +27,11 @@ class PersonSchemaTest extends FunSuite {
 
   test("person can generate Schema") {
     val expected: TapirSchema = TapirSchema(
-      `type` = Some(SchemaType.Object),
+      `type` = Some(List(SchemaType.Object)),
       properties = ListMap[String, TapirSchema](
-        "name" -> TapirSchema(`type` = Some(SchemaType.String), nullable = Some(false)),
-        "age" -> TapirSchema(`type` = Some(SchemaType.Integer), nullable = Some(false), format = Some("int32"))
+        "name" -> TapirSchema(SchemaType.String),
+        "age" -> TapirSchema(SchemaType.Integer).copy(format = Some("int32"))
       ),
-      nullable = Some(false),
       required = List("name", "age")
     )
 

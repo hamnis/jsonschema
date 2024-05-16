@@ -381,7 +381,7 @@ object structure {
       }
 
       override private[schema] def apiSpecSchema =
-        List(name -> internal.ApiSpecModel.schemaFor(elemSchema).copy(nullable = Some(true)))
+        List(name -> internal.ApiSpecModel.schemaFor(elemSchema).nullable)
     }
 
     final case class Required[R, E](
