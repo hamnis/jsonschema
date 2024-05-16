@@ -12,7 +12,7 @@ import cats.syntax.all._
 import cats.free.FreeApplicative
 import io.circe._
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, SchemaLike, Schema => ApiSpecSchema}
+import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, Schema => ApiSpecSchema, SchemaLike}
 
 import java.time.{Duration, Instant, LocalDate, LocalTime, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -180,8 +180,8 @@ object Schema {
   def oneOf[A](b: AltBuilder[A] => Chain[Alt[A]]): Schema[A] =
     alternatives(b(alt))
 
-  //TODO: According to https://json-schema.org/draft/2020-12/json-schema-validation.html#section-6.1.2
-  //this can be any type
+  // TODO: According to https://json-schema.org/draft/2020-12/json-schema-validation.html#section-6.1.2
+  // this can be any type
   def enumeration(options: List[String]) =
     Enumeration(options)
   def string[A](
@@ -210,7 +210,7 @@ object Schema {
     )(implicit valueSchema: Schema[V]): FreeApplicative[Field[R, *], Unit] =
       apply(name, _ => ()) {
         valueSchema.xmap { r =>
-          Either.cond((r == value), (), DecodingFailure("Const not equal to self", Nil))
+          Either.cond(r == value, (), DecodingFailure("Const not equal to self", Nil))
         }(_ => value)
       }
 
@@ -328,7 +328,7 @@ object structure {
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]
   final case class Isos[A](value: XMap[A]) extends Schema[A]
   final case class Defer[A](value: () => Schema[A]) extends Schema[A]
-  //todo: enums may be of any type
+  // todo: enums may be of any type
   final case class Enumeration(allowed: List[String]) extends Schema[String]
   final case class AllOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
   final case class AnyOf[A](value: NonEmptyChain[Schema[A]], targetSchema: Option[Schema[A]]) extends Schema[A]
@@ -381,7 +381,7 @@ object structure {
       }
 
       override private[schema] def apiSpecSchema =
-        List(name -> internal.ApiSpecModel.schemaFor(elemSchema).copy(nullable = Some(true)))
+        List(name -> internal.ApiSpecModel.schemaFor(elemSchema).nullable)
     }
 
     final case class Required[R, E](
