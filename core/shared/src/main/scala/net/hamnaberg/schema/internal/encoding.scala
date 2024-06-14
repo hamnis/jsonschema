@@ -32,6 +32,8 @@ object encoding {
       Encoder.encodeString
     case Enumeration(_) =>
       Encoder.encodeString
+    case SSet(elem) =>
+      Encoder.encodeSet(fromSchema(elem))
     case Sequence(value, _, _) =>
       encodeList(value)
     case Record(rec) =>
