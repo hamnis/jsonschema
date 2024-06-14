@@ -12,6 +12,7 @@ inThisBuild(
     ),
     tlCiReleaseBranches := Nil,
     tlJdkRelease := Some(11),
+    tlSonatypeUseLegacyHost := true,
     githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
   )
 )
