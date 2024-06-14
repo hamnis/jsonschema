@@ -20,7 +20,7 @@ val circeVersion = "0.14.7"
 
 val sttpModelVersion = "0.10.0"
 
-val catsVersion = "2.10.0"
+val catsVersion = "2.12.0"
 
 lazy val core = crossProject(JVMPlatform, JSPlatform)
   .settings(
@@ -42,7 +42,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
     libraryDependencies += "org.jruby.joni" % "joni" % "2.2.1"
   )
   .jsSettings(
-    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+    libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
   )
 
 lazy val root = tlCrossRootProject.aggregate(core)
