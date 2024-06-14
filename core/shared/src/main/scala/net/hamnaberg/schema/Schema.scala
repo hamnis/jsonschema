@@ -12,7 +12,7 @@ import cats.syntax.all.*
 import cats.free.FreeApplicative
 import io.circe.*
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, SchemaLike, Schema as ApiSpecSchema}
+import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, Schema => ApiSpecSchema, SchemaLike}
 
 import java.time.{Duration, Instant, LocalDate, LocalTime, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
