@@ -8,11 +8,11 @@ package net.hamnaberg.schema
 
 import cats.Eval
 import cats.data.{Chain, NonEmptyChain, ValidatedNel}
-import cats.syntax.all._
+import cats.syntax.all.*
 import cats.free.FreeApplicative
-import io.circe._
+import io.circe.*
 import net.hamnaberg.schema.internal.{encoding, validation}
-import sttp.apispec.{AnySchema, ExampleSingleValue, Pattern, Schema => ApiSpecSchema, SchemaLike}
+import sttp.apispec.{AnySchema, Discriminator, ExampleSingleValue, Pattern, SchemaLike, Schema as ApiSpecSchema}
 
 import java.time.{Duration, Instant, LocalDate, LocalTime, OffsetDateTime, ZonedDateTime}
 import java.time.format.DateTimeFormatter
@@ -51,61 +51,34 @@ sealed trait Schema[A] extends Product with Serializable { self =>
   def at(field: String): Schema[A] =
     Schema.record[A](_(field, identity)(this))
 
-  def withDescription(description: String) =
+  def withModifyMeta(modify: Meta[A] => Meta[A]) =
     this match {
-      case Meta(schema, meta, _, title, deprecated, extensions, local) =>
-        Meta(schema, meta, Some(description), title, deprecated, extensions, local)
+      case m: Meta[A] =>
+        modify(m)
       case other =>
-        Meta(other, None, Some(description), None, None, None, LocalDefinitions.empty)
+        modify(Meta.wrap(other))
     }
+
+  def withDescription(description: String) =
+    withModifyMeta(_.copy(description = Some(description)))
 
   def withTitle(title: String) =
-    this match {
-      case Meta(schema, meta, desc, _, deprecated, extensions, local) =>
-        Meta(schema, meta, desc, Some(title), deprecated, extensions, local)
-      case other =>
-        Meta(other, None, None, Some(title), None, None, LocalDefinitions.empty)
-    }
+    withModifyMeta(_.copy(title = Some(title)))
 
   def withMetaSchema(metaSchema: String) =
-    this match {
-      case Meta(schema, _, desc, title, deprecated, extensions, local) =>
-        Meta(schema, Some(metaSchema), desc, title, deprecated, extensions, local)
-      case other =>
-        Meta(other, Some(metaSchema), None, None, None, None, LocalDefinitions.empty)
-    }
+    withModifyMeta(_.copy(metaSchema = Some(metaSchema)))
 
   def withDeprecated(deprecated: Boolean) =
-    this match {
-      case Meta(schema, meta, desc, title, _, extensions, local) =>
-        Meta(schema, meta, desc, title, Some(deprecated), extensions, local)
-      case other =>
-        Meta(other, None, None, None, Some(deprecated), None, LocalDefinitions.empty)
-    }
+    withModifyMeta(_.copy(deprecated = Some(deprecated)))
 
   def withExtensions(json: JsonObject) =
-    this match {
-      case Meta(schema, meta, desc, title, deprecated, _, local) =>
-        Meta(schema, meta, desc, title, deprecated, Some(json), local)
-      case other =>
-        Meta(other, None, None, None, None, Some(json), LocalDefinitions.empty)
-    }
+    withModifyMeta(_.copy(extensions = Some(json)))
 
   def withLocalDefinitions(definitions: LocalDefinitions) =
-    this match {
-      case Meta(schema, meta, desc, title, deprecated, ext, _) =>
-        Meta(schema, meta, desc, title, deprecated, ext, definitions)
-      case other =>
-        Meta(other, None, None, None, None, None, definitions)
-    }
+    withModifyMeta(_.copy(definitions = definitions))
 
   def addLocalDefinition(ref: String, definition: Schema[Json]) =
-    this match {
-      case Meta(schema, meta, desc, title, deprecated, ext, local) =>
-        Meta(schema, meta, desc, title, deprecated, ext, local.put(ref, definition))
-      case other =>
-        Meta(other, None, None, None, None, None, LocalDefinitions(ListMap(ref -> definition)))
-    }
+    withModifyMeta(m => m.copy(definitions = m.definitions.put(ref, definition)))
 
   def xmap[B](f: A => Decoder.Result[B])(g: B => A): Schema[B] =
     Isos {
@@ -224,7 +197,7 @@ object Schema {
   }
 
   class AltBuilder[A] {
-    def apply[B](
+    def ampply[B](
         caseSchema_ : Schema[B]
     )(implicit prism_ : Prism[A, B]): Chain[Alt[A]] =
       Chain.one {
@@ -343,6 +316,9 @@ object structure {
       extensions: Option[JsonObject],
       definitions: LocalDefinitions
   ) extends Schema[A]
+  object Meta {
+    def wrap[A](s: Schema[A]): Meta[A] = Meta(s, None, None, None, None, None, LocalDefinitions.empty)
+  }
 
   sealed trait Field[R, E] extends Product with Serializable {
     private[schema] def decode(c: HCursor): Decoder.Result[E]
