@@ -44,6 +44,8 @@ sealed trait Schema[A] extends Product with Serializable { self =>
   def asSeq(min: Option[Int] = None, max: Option[Int] = None): Schema[immutable.Seq[A]] =
     asList(min, max).imap[immutable.Seq[A]](x => x)(_.toList)
 
+  def asSet: Schema[Set[A]] = SSet(this)
+
   def toAny: Schema[Json] = Custom(compiled, Encoder[Json], Decoder[Json])
 
   def reference(ref: String): Schema[Json] = Reference(ref, this.toAny)
@@ -296,6 +298,7 @@ object structure {
       pattern: Option[Pattern] = None
   ) extends Schema[String]
   final case class Reference(ref: String, schema: Schema[Json]) extends Schema[Json]
+  final case class SSet[A](element: Schema[A]) extends Schema[collection.immutable.Set[A]]
   final case class Sequence[A](value: Schema[A], min: Option[Int] = None, max: Option[Int] = None)
       extends Schema[List[A]]
   final case class Record[R](value: FreeApplicative[Field[R, *], R]) extends Schema[R]

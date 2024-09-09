@@ -96,6 +96,18 @@ object validation extends StringValidationPlatform {
               .toValidNel[ValidationError](error)
               .andThen(s => validate(s))
           }
+      case structure.SSet(element) =>
+        val error = ValidationError("Not a valid set", history)
+        json.asArray match {
+          case Some(array) =>
+            val validItems = array.zipWithIndex.traverse { case (item, idx) =>
+              eval(element, item, CursorOp.DownN(idx) :: history).map(_ => ())
+            }
+            val dist = array.distinct
+            val isDistinct = if (dist.size == array.size && dist == array) json.validNel else error.invalidNel
+            (validItems, isDistinct).mapN((_, _) => json)
+          case None => error.invalidNel
+        }
       case structure.Sequence(elementSchema, min, max) =>
         val error = ValidationError("Not a valid array", history)
         json.asArray match {

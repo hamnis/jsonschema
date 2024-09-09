@@ -52,6 +52,12 @@ object ApiSpecModel {
         )
       case Enumeration(allowed) =>
         TapirSchema(`type` = Some(List(SchemaType.String)), `enum` = Some(allowed.map(ExampleSingleValue(_))))
+      case SSet(element) =>
+        TapirSchema(
+          `type` = Some(List(SchemaType.Array)),
+          items = Some(schemaFor(element)),
+          uniqueItems = Some(true)
+        )
       case Sequence(value, min, max) =>
         TapirSchema(
           `type` = Some(List(SchemaType.Array)),
