@@ -4,7 +4,7 @@ inThisBuild(
     startYear := Some(2021),
     organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.12.19", "2.13.14", "3.3.3"),
+    crossScalaVersions := Seq("2.12.20", "2.13.14", "3.3.3"),
     scalaVersion := crossScalaVersions.value.head,
     ThisBuild / licenses := Seq(License.Apache2),
     developers := List(
@@ -17,9 +17,9 @@ inThisBuild(
   )
 )
 
-val circeVersion = "0.14.7"
+val circeVersion = "0.14.10"
 
-val sttpModelVersion = "0.10.0"
+val sttpModelVersion = "0.11.3"
 
 val catsVersion = "2.12.0"
 
@@ -36,7 +36,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-jawn" % circeVersion,
       "org.typelevel" %%% "cats-core" % catsVersion,
       "org.typelevel" %%% "cats-free" % catsVersion,
-      "org.scalameta" %%% "munit" % "0.7.29" % Test
+      "org.scalameta" %%% "munit" % "1.0.1" % Test
     )
   )
   .jvmSettings(
