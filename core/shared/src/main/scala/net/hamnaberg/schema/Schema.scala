@@ -159,12 +159,22 @@ object Schema {
   // this can be any type
   def enumeration(options: List[String]) =
     Enumeration(options)
-  def string[A](
+
+  def string(
       format: Option[String] = None,
       minLength: Option[Int] = None,
       maxLength: Option[Int] = None,
       pattern: Option[Pattern] = None
   ): Schema[String] = Str(format, minLength, maxLength, pattern)
+
+  def asString[A](
+      from: A => String,
+      to: String => Decoder.Result[A],
+      format: Option[String] = None,
+      minLength: Option[Int] = None,
+      maxLength: Option[Int] = None,
+      pattern: Option[Pattern] = None
+  ): Schema[A] = string(format, minLength, maxLength, pattern).xmap(to)(from)
 
   def field[R] = new FieldBuilder[R]
   def alt[R] = new AltBuilder[R]
