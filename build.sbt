@@ -4,7 +4,7 @@ inThisBuild(
     startYear := Some(2021),
     organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.12.20", "2.13.14", "3.3.3"),
+    crossScalaVersions := Seq("2.12.20", "2.13.16", "3.3.6"),
     scalaVersion := crossScalaVersions.value.head,
     ThisBuild / licenses := Seq(License.Apache2),
     developers := List(
@@ -13,7 +13,7 @@ inThisBuild(
     tlCiReleaseBranches := Nil,
     tlJdkRelease := Some(11),
     tlSonatypeUseLegacyHost := true,
-    githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+    githubWorkflowJavaVersions := Seq(JavaSpec.temurin("21"))
   )
 )
 
