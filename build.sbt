@@ -17,9 +17,9 @@ inThisBuild(
   )
 )
 
-val circeVersion = "0.14.10"
+val circeVersion = "0.14.12"
 
-val sttpModelVersion = "0.11.3"
+val sttpModelVersion = "0.11.9"
 
 val catsVersion = "2.12.0"
 
@@ -36,11 +36,11 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-jawn" % circeVersion,
       "org.typelevel" %%% "cats-core" % catsVersion,
       "org.typelevel" %%% "cats-free" % catsVersion,
-      "org.scalameta" %%% "munit" % "1.0.1" % Test
+      "org.scalameta" %%% "munit" % "1.1.1" % Test
     )
   )
   .jvmSettings(
-    libraryDependencies += "org.jruby.joni" % "joni" % "2.2.1"
+    libraryDependencies += "org.jruby.joni" % "joni" % "2.2.6"
   )
   .jsSettings(
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
