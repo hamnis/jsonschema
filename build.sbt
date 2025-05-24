@@ -4,7 +4,7 @@ inThisBuild(
     startYear := Some(2021),
     organizationName := "Erlend Hamnaberg",
     organization := "net.hamnaberg",
-    crossScalaVersions := Seq("2.12.20", "2.13.14", "3.3.3"),
+    crossScalaVersions := Seq("2.12.20", "2.13.16", "3.3.6"),
     scalaVersion := crossScalaVersions.value.head,
     ThisBuild / licenses := Seq(License.Apache2),
     developers := List(
@@ -13,13 +13,13 @@ inThisBuild(
     tlCiReleaseBranches := Nil,
     tlJdkRelease := Some(11),
     tlSonatypeUseLegacyHost := true,
-    githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+    githubWorkflowJavaVersions := Seq(JavaSpec.temurin("21"))
   )
 )
 
-val circeVersion = "0.14.10"
+val circeVersion = "0.14.12"
 
-val sttpModelVersion = "0.11.3"
+val sttpModelVersion = "0.11.9"
 
 val catsVersion = "2.12.0"
 
@@ -36,11 +36,11 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
       "io.circe" %%% "circe-jawn" % circeVersion,
       "org.typelevel" %%% "cats-core" % catsVersion,
       "org.typelevel" %%% "cats-free" % catsVersion,
-      "org.scalameta" %%% "munit" % "1.0.1" % Test
+      "org.scalameta" %%% "munit" % "1.1.1" % Test
     )
   )
   .jvmSettings(
-    libraryDependencies += "org.jruby.joni" % "joni" % "2.2.1"
+    libraryDependencies += "org.jruby.joni" % "joni" % "2.2.6"
   )
   .jsSettings(
     libraryDependencies += "io.github.cquiroz" %%% "scala-java-time" % "2.6.0"
